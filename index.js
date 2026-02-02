@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Events, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Events, EmbedBuilder, ActivityType } = require('discord.js');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // --- Configuration ---
@@ -84,11 +84,27 @@ const client = new Client({
 
 client.once(Events.ClientReady, readyClient => {
     console.log(`Ready! Logged in as ${readyClient.user.tag}`);
+
+    // Set status to "Playing naosletter.com" with DND (Red) indicator
+    readyClient.user.setPresence({
+        activities: [{ name: 'naosletter.com', type: ActivityType.Playing }],
+        status: 'dnd',
+    });
 });
+
+// --- Message History for De-duplication ---
+const lastMessages = new Map();
 
 client.on(Events.MessageCreate, async message => {
     // 1. Ignore bots to prevent loops
     if (message.author.bot) return;
+
+    // 2. Duplicate Check: Skip if message is identical to the last one in this channel
+    const cleanedContent = message.content.trim();
+    if (lastMessages.get(message.channel.id) === cleanedContent) {
+        return;
+    }
+    lastMessages.set(message.channel.id, cleanedContent);
 
     // --- VIP Feature: English -> Indonesian for specific user ---
     const VIP_USER_ID = '860909419226595328';
@@ -149,5 +165,11 @@ client.on(Events.MessageCreate, async message => {
         console.error("Failed to send translation:", err);
     }
 });
+
+// Log in to Discord with your client's token
+if (!DISCORD_TOKEN) {
+    console.error("Error: DISCORD_TOKEN is missing! Please set it in your environment variables.");
+    process.exit(1);
+}
 
 client.login(DISCORD_TOKEN);

@@ -96,8 +96,8 @@ client.once(Events.ClientReady, readyClient => {
 const lastMessages = new Map();
 
 client.on(Events.MessageCreate, async message => {
-    // 1. Ignore bots to prevent loops
-    if (message.author.bot) return;
+    // 1. Ignore ONLY ourself to prevent immediate loops (allow other bots)
+    if (message.author.id === client.user.id) return;
 
     // 2. Duplicate Check: Skip if message is identical to the last one in this channel
     const cleanedContent = message.content.trim();
@@ -107,7 +107,7 @@ client.on(Events.MessageCreate, async message => {
     lastMessages.set(message.channel.id, cleanedContent);
 
     // --- VIP Feature: English -> Indonesian for specific user ---
-    const VIP_USER_ID = '860909419226595328';
+    const VIP_USER_ID = '287489239250370560';
 
     // Debug logging to help identify why it might fail
     if (message.author.id === VIP_USER_ID) {

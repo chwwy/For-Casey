@@ -83,7 +83,7 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, readyClient => {
-    console.log(`Ready! Logged in as ${readyClient.user.tag}`);
+    console.log(`Ready!Logged in as ${readyClient.user.tag}`);
 
     // Set status to "Playing naosletter.com" with DND (Red) indicator
     readyClient.user.setPresence({

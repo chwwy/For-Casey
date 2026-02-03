@@ -28,19 +28,19 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 async function translateText(text, authorUsername) {
     try {
         const prompt = `
-        You are a generic translator for a Discord chat.
-        Task: Translate the following text from Indonesian (or mixed Indonesian/English) to standard English.
-        
-        Rules:
-        1. Preserve the tone, slang, and intent of the original message.
-        2. If the message is already fully English, strictly return the original text exactly as is.
-        3. Do not add any conversational filler like "Here is the translation". Just the translation.
-        4. Maintain formatting like code blocks, bolding, etc.
-        5. If the Indonesian is informal, the English should be informal. If there are cultural jokes, provide a localized English equivalent.
-        
-        Original Author: ${authorUsername}
-        Message: "${text}"
-        `;
+            You are a generic translator for a Discord chat.
+            Task: Translate the following text from Indonesian (or mixed Indonesian/English) to standard English.
+            
+            Rules:
+            1. Preserve the tone, slang, and intent of the original message.
+            2. If the message is already fully English, strictly return the original text exactly as is.
+            3. Do not add any conversational filler like "Here is the translation". Just the translation.
+            4. Maintain formatting like code blocks, bolding, etc.
+            5. If the Indonesian is informal, the English should be informal. If there are cultural jokes, provide a localized English equivalent.
+            
+            Original Author: ${authorUsername}
+            Message: "${text}"
+            `;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
@@ -54,15 +54,15 @@ async function translateText(text, authorUsername) {
 async function translateToIndonesian(text) {
     try {
         const prompt = `
-        You are a generic translator for a Discord chat.
-        Task: Translate the following English text to Indonesian.
-        
-        Rules:
-        1. Use natural, conversational Indonesian (gaul/informal) unless the English is very formal.
-        2. Preserve the tone and intent.
-        
-        Message: "**Casey bilang:** ${text}"
-        `;
+            You are a generic translator for a Discord chat.
+            Task: Translate the following English text to Indonesian.
+            
+            Rules:
+            1. Use natural, conversational Indonesian (gaul/informal) unless the English is very formal.
+            2. Preserve the tone and intent.
+            
+            Message: "**Casey bilang:** ${text}"
+            `;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
@@ -94,6 +94,9 @@ client.once(Events.ClientReady, readyClient => {
 
 // --- Message History for De-duplication ---
 const lastMessages = new Map();
+
+// --- Message Queueing for Serial Processing ---
+const channelQueues = new Map(); // destinationChannelId -> Promise
 
 client.on(Events.MessageCreate, async message => {
     // 1. Ignore ONLY ourself to prevent immediate loops (allow other bots)
@@ -138,32 +141,52 @@ client.on(Events.MessageCreate, async message => {
         return;
     }
 
-    // 3. Process the translation
-    // Indicate processing using typing status (optional but nice UX)
-    // await destinationChannel.sendTyping(); // Careful with rate limits if busy
+    // --- Message Queueing to prevent race conditions ---
+    // Ensure that [Forward -> Reply] happens atomically per channel
+    const currentQueue = channelQueues.get(destinationChannelId) || Promise.resolve();
 
-    const translatedText = await translateText(message.content, message.author.username);
+    const nextTask = currentQueue.then(async () => {
+        // 3. Forward immediately (Low Latency relative to this task start)
+        let forwardedMessage;
+        try {
+            forwardedMessage = await destinationChannel.send({
+                forward: {
+                    message: message.id,
+                    channel: message.channelId,
+                    guild: message.guildId
+                }
+            });
+        } catch (err) {
+            console.error("Failed to forward message:", err);
+            return;
+        }
 
-    if (!translatedText) return;
+        // 4. Translate
+        const translatedText = await translateText(message.content, message.author.username);
 
-    // 4. Construct the Embed to look premium
-    const translationEmbed = new EmbedBuilder()
-        .setColor(0x0099FF) // Light blue
-        .setAuthor({
-            name: `${message.author.username}`,
-            iconURL: message.author.displayAvatarURL()
-        })
-        .setDescription(translatedText)
-        .addFields({ name: 'Original', value: message.content.substring(0, 1024) }) // Discord field limit
-        .setFooter({ text: `From #${message.channel.name}` })
-        .setTimestamp();
+        if (!translatedText) return;
 
-    // 5. Send to private destination channel
-    try {
-        await destinationChannel.send({ embeds: [translationEmbed] });
-    } catch (err) {
-        console.error("Failed to send translation:", err);
-    }
+        // 5. Reply with translation (Embed)
+        const translationEmbed = new EmbedBuilder()
+            .setColor(0x0099FF)
+            .setAuthor({
+                name: `${message.author.username}`,
+                iconURL: message.author.displayAvatarURL()
+            })
+            .setDescription(translatedText)
+            .setFooter({ text: `From #${message.channel.name}` })
+            .setTimestamp();
+
+        try {
+            await forwardedMessage.reply({ embeds: [translationEmbed] });
+        } catch (err) {
+            console.error("Failed to reply with translation:", err);
+        }
+    }).catch(err => {
+        console.error("Error in message queue:", err);
+    });
+
+    channelQueues.set(destinationChannelId, nextTask);
 });
 
 // Log in to Discord with your client's token

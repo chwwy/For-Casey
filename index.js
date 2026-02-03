@@ -146,39 +146,47 @@ client.on(Events.MessageCreate, async message => {
     const currentQueue = channelQueues.get(destinationChannelId) || Promise.resolve();
 
     const nextTask = currentQueue.then(async () => {
-        // 3. Forward immediately (Low Latency relative to this task start)
-        let forwardedMessage;
-        try {
-            forwardedMessage = await destinationChannel.send({
-                forward: {
-                    message: message.id,
-                    channel: message.channelId,
-                    guild: message.guildId
+        // 4. Translate
+        const translationPromise = translateText(message.content, message.author.username);
+
+        let replyContext = '';
+        if (message.reference) {
+            try {
+                const referencedMessage = await message.fetchReference();
+                if (referencedMessage && referencedMessage.content) {
+                    const translatedRef = await translateText(referencedMessage.content, referencedMessage.author.username);
+                    if (translatedRef) {
+                        replyContext = `> **Replying to ${referencedMessage.author.username}:** ${translatedRef}\n`;
+                    }
                 }
-            });
-        } catch (err) {
-            console.error("Failed to forward message:", err);
-            return;
+            } catch (error) {
+                console.log('Skipping reply context due to error:', error.message);
+            }
         }
 
-        // 4. Translate
-        const translatedText = await translateText(message.content, message.author.username);
+        const translatedText = await translationPromise;
 
         if (!translatedText) return;
 
-        // 5. Reply with translation (Embed)
+        // 5. Send Translation Embed
         const translationEmbed = new EmbedBuilder()
-            .setColor(0x0099FF)
+            .setColor(0xFFD1DC)
             .setAuthor({
                 name: `${message.author.username}`,
-                iconURL: message.author.displayAvatarURL()
+                iconURL: message.author.displayAvatarURL(),
+                url: message.url
             })
-            .setDescription(translatedText)
+            .setDescription(
+                replyContext +
+                translatedText +
+                `\n\n**Original:**\n${message.content}` +
+                `\n\n[Jump to Message](${message.url})`
+            )
             .setFooter({ text: `From #${message.channel.name}` })
             .setTimestamp();
 
         try {
-            await forwardedMessage.reply({ embeds: [translationEmbed] });
+            await destinationChannel.send({ embeds: [translationEmbed] });
         } catch (err) {
             console.error("Failed to reply with translation:", err);
         }

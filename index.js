@@ -156,7 +156,7 @@ client.on(Events.MessageCreate, async message => {
                 if (referencedMessage && referencedMessage.content) {
                     const translatedRef = await translateText(referencedMessage.content, referencedMessage.author.username);
                     if (translatedRef) {
-                        replyContext = `> **Replying to ${referencedMessage.author.username}:** ${translatedRef}\n`;
+                        replyContext = `> **Replying to ${referencedMessage.author.username}:** ${translatedRef.replace(/\n/g, '\n> ')}\n`;
                     }
                 }
             } catch (error) {

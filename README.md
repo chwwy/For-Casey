@@ -21,7 +21,7 @@ This is a starter template for a Discord bot using Node.js and `discord.js`.
 
 ## Features
 
-- **Deep Translation**: Uses Google Gemini 1.5 Flash to understand context and slang.
+- **Deep Translation**: Uses Google Gemini 2.5 Flash to understand context and slang.
 - **Channel Mirroring**: Automatically forwards translated messages from public source channels to private destination channels.
 - **Premium UI**: Displays translations in a clean Embed with the original author's avatar and the original text for reference.
 - **Smart Filtering**: Ignores bots and unmapped channels.

@@ -25,6 +25,19 @@ console.log('Channel Mappings:', sourceIds.map((s, i) => `${s} -> ${destIds[i] |
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
+// Helper to convert image URL to Generative Part
+async function urlToGenerativePart(url, mimeType) {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    return {
+        inlineData: {
+            data: buffer.toString("base64"),
+            mimeType,
+        },
+    };
+}
+
 async function translateText(text, authorUsername) {
     try {
         const prompt = `
@@ -51,20 +64,21 @@ async function translateText(text, authorUsername) {
     }
 }
 
-async function translateToIndonesian(text) {
+async function translateToIndonesian(text, imageParts = []) {
     try {
         const prompt = `
             You are a generic translator for a Discord chat.
-            Task: Translate the following English text to Indonesian.
+            Task: Translate the following English text (and/or text inside the image) to Indonesian.
             
             Rules:
             1. Use natural, conversational Indonesian (gaul/informal) unless the English is very formal.
             2. Preserve the tone and intent.
+            3. Don't use dramatic and ancient Indonesian words like "selir" instead of "pasangan"
             
-            Message: "**Casey bilang:** ${text}"
+            Message: "${text || '[Image Only]'}"
             `;
 
-        const result = await model.generateContent(prompt);
+        const result = await model.generateContent([prompt, ...imageParts]);
         const response = await result.response;
         return response.text().trim();
     } catch (error) {
@@ -110,21 +124,66 @@ client.on(Events.MessageCreate, async message => {
     lastMessages.set(message.channel.id, cleanedContent);
 
     // --- VIP Feature: English -> Indonesian for specific user ---
-    const VIP_USER_ID = '287489239250370560';
 
-    // Debug logging to help identify why it might fail
-    if (message.author.id === VIP_USER_ID) {
-        console.log(`VIP User detected. Message content: "${message.content}". Mentions bot: ${message.mentions.users.has(client.user.id)}`);
+    const VIP_USERS = {
+        '287489239250370560': 'Casey',
+        '860909419226595328': 'Nao'
+    };
+
+    // Debug logging
+    if (VIP_USERS[message.author.id]) {
+        console.log(`VIP User detected (${VIP_USERS[message.author.id]}). Message content: "${message.content}". Mentions bot: ${message.mentions.users.has(client.user.id)}`);
     }
 
-    if (message.author.id === VIP_USER_ID && message.mentions.users.has(client.user.id)) {
+    if (VIP_USERS[message.author.id] && message.mentions.users.has(client.user.id)) {
+        const vipName = VIP_USERS[message.author.id];
+
         // Remove mention syntax to get clean text
         const textToTranslate = message.content.replace(/<@!?[0-9]+>/, '').trim();
 
-        if (textToTranslate) {
-            const translatedIndo = await translateToIndonesian(textToTranslate);
+        // Collect image attachments
+        const imageParts = [];
+        if (message.attachments.size > 0) {
+            for (const [key, attachment] of message.attachments) {
+                if (attachment.contentType && attachment.contentType.startsWith('image/')) {
+                    try {
+                        const part = await urlToGenerativePart(attachment.url, attachment.contentType);
+                        imageParts.push(part);
+                    } catch (err) {
+                        console.error('Failed to process attachment:', err);
+                    }
+                }
+            }
+        }
+
+        if (textToTranslate || imageParts.length > 0) {
+            let loadingMsg;
+            try {
+                loadingMsg = await message.reply('<a:loading:1468690130364661760> Translating...');
+            } catch (err) {
+                console.error("Failed to send loading message:", err);
+            }
+
+            const translatedIndo = await translateToIndonesian(textToTranslate, imageParts);
+
+            if (loadingMsg) {
+                try {
+                    await loadingMsg.delete();
+                } catch (err) {
+                    console.error("Failed to delete loading message:", err);
+                }
+            }
+
             if (translatedIndo) {
-                await message.reply(translatedIndo);
+                const vipEmbed = new EmbedBuilder()
+                    .setColor(0xFFD1DC)
+                    .setAuthor({
+                        name: `${vipName} bilang:`,
+                        iconURL: message.author.displayAvatarURL()
+                    })
+                    .setDescription(translatedIndo);
+
+                await message.reply({ embeds: [vipEmbed] });
             }
         }
         // Continue execution so it can still be mirrored if in a source channel

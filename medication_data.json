@@ -1,0 +1,55 @@
+{
+  "instances": {
+    "nao": {
+      "currentWeekStart": "2026-02-09",
+      "days": {
+        "Saturday": {
+          "AM": true,
+          "PM": true,
+          "mood": {
+            "AM": "I took two pills and it lowkey felt great even though it really took everything in me to get out of bed bro",
+            "PM": "Casey made an unsolicited command about my eyebags, but oddly I did not feel agitated at all. I also cleared out my wardrobe even though I was so tired after a full day of activities"
+          }
+        },
+        "Sunday": {
+          "AM": "12:26 PM",
+          "PM": false,
+          "mood": {
+            "AM": "I didn't wake up for more than once during the night",
+            "PM": ""
+          }
+        }
+      },
+      "messageIds": {
+        "1472313975386669218": "1472441841038393409"
+      }
+    },
+    "nightly": {
+      "currentWeekStart": "2026-02-09",
+      "days": {
+        "Saturday": {
+          "AM": false,
+          "PM": true,
+          "mood": {
+            "AM": "",
+            "PM": "bit stressed out bc of how busy day was + little sleep, tired all day. non-stop grinding irl side quests."
+          }
+        },
+        "Friday": {
+          "AM": false,
+          "PM": true,
+          "mood": {
+            "AM": "",
+            "PM": "ider dawwggg. ts a blur atp"
+          }
+        }
+      },
+      "messageIds": {
+        "1472444626978869411": "1472445371996442655"
+      },
+      "reminders": {
+        "1472444626978869411": "1472461675637510154"
+      }
+    }
+  }
+}

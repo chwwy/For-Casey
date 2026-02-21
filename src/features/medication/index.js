@@ -109,6 +109,12 @@ async function ensurePersistentMessage(client) {
                 data.setMessageId(key, channelId, message.id);
             }
 
+            try {
+                if (!message.pinned) await message.pin();
+            } catch (e) {
+                console.error(`Failed to pin message in ${channelId}:`, e);
+            }
+
             // Always ensure reactions exist based on slots
             try {
                 // Cleanup unwanted reactions (Legacy)
@@ -203,6 +209,12 @@ async function resetAndClear(client, force = false) {
 
                     const embeds = generateReportEmbeds(key);
                     await message.edit({ embeds: embeds });
+
+                    try {
+                        if (!message.pinned) await message.pin();
+                    } catch (e) {
+                        console.error(`Failed to pin message in ${channelId} during reset:`, e);
+                    }
                 }
             } catch (e) {
                 console.error(`Failed to reset message in ${channelId}:`, e);

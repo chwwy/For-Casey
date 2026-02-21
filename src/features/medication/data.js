@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const DATA_FILE = path.join(__dirname, '../../../medication_data.json');
+const DATA_FILE = process.env.DATA_PATH || path.join(__dirname, '../../../medication_data.json');
 
 // Helper: Get Current Date in Specific Timezone
 function getNow(timezone) {

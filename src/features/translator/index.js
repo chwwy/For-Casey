@@ -106,6 +106,16 @@ async function handleForwarding(message) {
 
     // --- Message Batching Logic ---
     const batchKey = `${message.channel.id}-${message.author.id}`;
+
+    // NEW LOGIC: If ANY other user has an active batch in this channel, forcibly close it immediately
+    for (const [key, existingBatch] of batchQueues.entries()) {
+        const [channelId, authorId] = key.split('-');
+        if (channelId === message.channel.id && authorId !== message.author.id) {
+            console.log(`User ${message.author.username} interrupted ${existingBatch.author.username}'s batch. Forcing dispatch.`);
+            flushBatch(key);
+        }
+    }
+
     let userBatch = batchQueues.get(batchKey);
 
     // If a batch exists, clear the existing timer to reset the 6-second window
@@ -144,98 +154,109 @@ async function handleForwarding(message) {
     return true;
 }
 
+function flushBatch(batchKey) {
+    const userBatch = batchQueues.get(batchKey);
+    if (!userBatch) return;
+
+    if (userBatch.timer) clearTimeout(userBatch.timer);
+
+    const destinationChannelId = channelMap.get(userBatch.sourceChannel.id);
+    if (!destinationChannelId) return;
+
+    // Pop the queue out of the map so new messages start a fresh batch
+    batchQueues.delete(batchKey);
+
+    // Combine the messages
+    const combinedContent = userBatch.messages.map(m => m.content).filter(Boolean).join('\n');
+
+    // Extract media links
+    let mainImageUrl = null;
+    const extraMediaUrls = [];
+
+    for (const msg of userBatch.messages) {
+        if (msg.attachments.size > 0) {
+            for (const [key, attachment] of msg.attachments) {
+                if (!mainImageUrl && attachment.contentType && attachment.contentType.startsWith('image/')) {
+                    mainImageUrl = attachment.url;
+                } else {
+                    extraMediaUrls.push(attachment.url);
+                }
+            }
+        }
+    }
+
+    // Grab the URL of the *last* message in the chain so the jump link goes to the end of their thought
+    const lastMessageUrl = userBatch.messages[userBatch.messages.length - 1].url;
+
+    // Process Translation Queue
+    const currentQueue = channelQueues.get(destinationChannelId) || Promise.resolve();
+
+    const nextTask = currentQueue.then(async () => {
+        // Translate the combined block
+        let translatedText = null;
+        if (combinedContent.length > 0) {
+            translatedText = await translateText(combinedContent, userBatch.author.username);
+        }
+
+        // Translate reply context if it exists
+        let replyText = '';
+        if (userBatch.replyContexts.length > 0) {
+            const refMsg = userBatch.replyContexts[0];
+            const translatedRef = await translateText(refMsg.content, refMsg.author.username);
+            if (translatedRef) {
+                replyText = `> **Replying to ${refMsg.author.username}:** ${translatedRef.replace(/\n/g, '\n> ')}\n`;
+            }
+        }
+
+        if (!translatedText && !mainImageUrl && extraMediaUrls.length === 0) return;
+
+        const descriptionParts = [];
+        if (replyText) descriptionParts.push(replyText);
+        if (translatedText) descriptionParts.push(`**Translation :flag_us: (${userBatch.messages.length} msg${userBatch.messages.length > 1 ? 's' : ''})**:\n${translatedText}`);
+        if (combinedContent) {
+            descriptionParts.push(`\n\n**Original 🇮🇩 (${userBatch.messages.length} msg${userBatch.messages.length > 1 ? 's' : ''}):**\n${combinedContent}`);
+        }
+        descriptionParts.push(`\n\n[Jump to Messages](${lastMessageUrl})`);
+
+        const translationEmbed = new EmbedBuilder()
+            .setColor(0xFFD1DC)
+            .setAuthor({
+                name: `${userBatch.author.username}`,
+                iconURL: userBatch.author.displayAvatarURL(),
+                url: lastMessageUrl
+            })
+            .setDescription(descriptionParts.join(''))
+            .setFooter({ text: `From #${userBatch.sourceChannel.name}` })
+            .setTimestamp();
+
+        if (mainImageUrl) {
+            translationEmbed.setImage(mainImageUrl);
+        }
+
+        try {
+            const messagePayload = { embeds: [translationEmbed] };
+            if (extraMediaUrls.length > 0) {
+                messagePayload.content = extraMediaUrls.join('\n');
+            }
+            await userBatch.destinationChannel.send(messagePayload);
+        } catch (err) {
+            console.error("Failed to reply with translation:", err);
+        }
+    }).catch(err => {
+        console.error("Error in message queue processing:", err);
+    });
+
+    channelQueues.set(destinationChannelId, nextTask);
+}
+
 function resetBatchTimer(batchKey, destinationChannelId) {
     const userBatch = batchQueues.get(batchKey);
     if (!userBatch) return;
 
     if (userBatch.timer) clearTimeout(userBatch.timer);
 
-    userBatch.timer = setTimeout(async () => {
-        // Pop the queue out of the map so new messages start a fresh batch
-        batchQueues.delete(batchKey);
-
-        // Combine the messages
-        const combinedContent = userBatch.messages.map(m => m.content).filter(Boolean).join('\n');
-
-        // Extract media links
-        let mainImageUrl = null;
-        const extraMediaUrls = [];
-
-        for (const msg of userBatch.messages) {
-            if (msg.attachments.size > 0) {
-                for (const [key, attachment] of msg.attachments) {
-                    if (!mainImageUrl && attachment.contentType && attachment.contentType.startsWith('image/')) {
-                        mainImageUrl = attachment.url;
-                    } else {
-                        extraMediaUrls.push(attachment.url);
-                    }
-                }
-            }
-        }
-
-        // Grab the URL of the *last* message in the chain so the jump link goes to the end of their thought
-        const lastMessageUrl = userBatch.messages[userBatch.messages.length - 1].url;
-
-        // Process Translation Queue
-        const currentQueue = channelQueues.get(destinationChannelId) || Promise.resolve();
-
-        const nextTask = currentQueue.then(async () => {
-            // Translate the combined block
-            let translatedText = null;
-            if (combinedContent.length > 0) {
-                translatedText = await translateText(combinedContent, userBatch.author.username);
-            }
-
-            // Translate reply context if it exists
-            let replyText = '';
-            if (userBatch.replyContexts.length > 0) {
-                const refMsg = userBatch.replyContexts[0];
-                const translatedRef = await translateText(refMsg.content, refMsg.author.username);
-                if (translatedRef) {
-                    replyText = `> **Replying to ${refMsg.author.username}:** ${translatedRef.replace(/\n/g, '\n> ')}\n`;
-                }
-            }
-
-            if (!translatedText && !mainImageUrl && extraMediaUrls.length === 0) return;
-
-            const descriptionParts = [];
-            if (replyText) descriptionParts.push(replyText);
-            if (translatedText) descriptionParts.push(`**Translation :flag_us: (${userBatch.messages.length} msg${userBatch.messages.length > 1 ? 's' : ''})**:\n${translatedText}`);
-            if (combinedContent) {
-                descriptionParts.push(`\n\n**Original 🇮🇩 (${userBatch.messages.length} msg${userBatch.messages.length > 1 ? 's' : ''}):**\n${combinedContent}`);
-            }
-            descriptionParts.push(`\n\n[Jump to Messages](${lastMessageUrl})`);
-
-            const translationEmbed = new EmbedBuilder()
-                .setColor(0xFFD1DC)
-                .setAuthor({
-                    name: `${userBatch.author.username}`,
-                    iconURL: userBatch.author.displayAvatarURL(),
-                    url: lastMessageUrl
-                })
-                .setDescription(descriptionParts.join(''))
-                .setFooter({ text: `From #${userBatch.sourceChannel.name}` })
-                .setTimestamp();
-
-            if (mainImageUrl) {
-                translationEmbed.setImage(mainImageUrl);
-            }
-
-            try {
-                const messagePayload = { embeds: [translationEmbed] };
-                if (extraMediaUrls.length > 0) {
-                    messagePayload.content = extraMediaUrls.join('\n');
-                }
-                await userBatch.destinationChannel.send(messagePayload);
-            } catch (err) {
-                console.error("Failed to reply with translation:", err);
-            }
-        }).catch(err => {
-            console.error("Error in message queue processing:", err);
-        });
-
-        channelQueues.set(destinationChannelId, nextTask);
-
+    userBatch.timer = setTimeout(() => {
+        flushBatch(batchKey);
     }, 10000); // 10-second timeout
 }
 

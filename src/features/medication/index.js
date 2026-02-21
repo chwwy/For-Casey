@@ -109,11 +109,6 @@ async function ensurePersistentMessage(client) {
                 data.setMessageId(key, channelId, message.id);
             }
 
-            try {
-                if (!message.pinned) await message.pin();
-            } catch (e) {
-                console.error(`Failed to pin message in ${channelId}:`, e);
-            }
 
             // Always ensure reactions exist based on slots
             try {
@@ -141,6 +136,46 @@ async function ensurePersistentMessage(client) {
     }
 }
 
+async function sendBackupDM(client, key, instanceConfig, currentData) {
+    const backupUserId = instanceConfig.backupUserId;
+    if (currentData && backupUserId) {
+        try {
+            const user = await client.users.fetch(backupUserId);
+            if (user) {
+                const reportEmbed = new EmbedBuilder()
+                    .setTitle(`Weekly Backup: ${instanceConfig.name}`)
+                    .setDescription(`Week starting: ${currentData.currentWeekStart || 'Unknown'}`)
+                    .setColor(16765404);
+
+                const days = currentData.days || {};
+                let summary = "";
+                for (const day of DAY_NAMES) {
+                    const d = days[day] || {};
+                    const checks = instanceConfig.slots.map(s => `${s}: ${d[s] ? '✅' : '❌'}`).join(', ');
+                    const moodMap = d.mood || {};
+                    const moods = instanceConfig.slots.map(s => `${s} Mood: ${moodMap[s] || '-'}`).join('\n');
+                    summary += `**${day}**\n${checks}\n${moods}\n\n`;
+                }
+                // Truncate safely
+                if (summary.length > 4000) summary = summary.substring(0, 4000) + "...";
+
+                reportEmbed.setDescription(summary);
+
+                const dmMsg = await user.send({ content: `Here is your weekly medication backup! 💊`, embeds: [reportEmbed] });
+                console.log(`Sent backup to ${backupUserId}`);
+
+                try {
+                    if (!dmMsg.pinned) await dmMsg.pin();
+                } catch (e) {
+                    console.error(`Failed to pin backup DM for ${backupUserId}:`, e);
+                }
+            }
+        } catch (e) {
+            console.error(`Failed to send backup DM for ${key}:`, e);
+        }
+    }
+}
+
 async function resetAndClear(client, force = false) {
     console.log('Running medication reset check...');
 
@@ -155,38 +190,7 @@ async function resetAndClear(client, force = false) {
 
         // 1. Send Backup DM
         const currentData = data.peekInstanceData(key); // Assuming peekInstanceData from step 319
-        const backupUserId = instanceConfig.backupUserId;
-
-        if (currentData && backupUserId) {
-            try {
-                const user = await client.users.fetch(backupUserId);
-                if (user) {
-                    const reportEmbed = new EmbedBuilder()
-                        .setTitle(`Weekly Backup: ${instanceConfig.name}`)
-                        .setDescription(`Week starting: ${currentData.currentWeekStart || 'Unknown'}`)
-                        .setColor(16765404);
-
-                    const days = currentData.days || {};
-                    let summary = "";
-                    for (const day of DAY_NAMES) {
-                        const d = days[day] || {};
-                        const checks = instanceConfig.slots.map(s => `${s}: ${d[s] ? '✅' : '❌'}`).join(', ');
-                        const moodMap = d.mood || {};
-                        const moods = instanceConfig.slots.map(s => `${s} Mood: ${moodMap[s] || '-'}`).join('\n');
-                        summary += `**${day}**\n${checks}\n${moods}\n\n`;
-                    }
-                    // Truncate safely
-                    if (summary.length > 4000) summary = summary.substring(0, 4000) + "...";
-
-                    reportEmbed.setDescription(summary);
-
-                    await user.send({ content: `Here is your weekly medication backup! 💊`, embeds: [reportEmbed] });
-                    console.log(`Sent backup to ${backupUserId}`);
-                }
-            } catch (e) {
-                console.error(`Failed to send backup DM for ${key}:`, e);
-            }
-        }
+        await sendBackupDM(client, key, instanceConfig, currentData);
 
         // 2. Perform Reset
         data.resetWeekData(key, instanceConfig.timezone);
@@ -210,11 +214,7 @@ async function resetAndClear(client, force = false) {
                     const embeds = generateReportEmbeds(key);
                     await message.edit({ embeds: embeds });
 
-                    try {
-                        if (!message.pinned) await message.pin();
-                    } catch (e) {
-                        console.error(`Failed to pin message in ${channelId} during reset:`, e);
-                    }
+
                 }
             } catch (e) {
                 console.error(`Failed to reset message in ${channelId}:`, e);
@@ -373,8 +373,14 @@ module.exports = {
                 console.error("Import failed:", err);
                 message.reply(`Failed to parse JSON: ${err.message}`);
             }
+        } else if (command === 'backup') {
+            for (const [key, instanceConfig] of Object.entries(config.instances)) {
+                const currentData = data.peekInstanceData(key);
+                await sendBackupDM(message.client, key, instanceConfig, currentData);
+            }
+            message.reply('Manual weekly backups sent to DMs and pinned.');
         } else {
-            message.reply('Use `!pill refresh`, `!pill remind`, or `!pill import` to restore or test.');
+            message.reply('Use `!pill refresh`, `!pill backup`, `!pill remind`, or `!pill import` to restore or test.');
         }
         return true;
     },

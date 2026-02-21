@@ -204,7 +204,7 @@ function flushBatch(batchKey) {
             const refMsg = userBatch.replyContexts[0];
             const translatedRef = await translateText(refMsg.content, refMsg.author.username);
             if (translatedRef) {
-                replyText = `> __**Replying to ${refMsg.author.username}:**__ ${translatedRef.replace(/\n/g, '\n> ')}\n`;
+                replyText = `> **Replying to ${refMsg.author.username}:** ${translatedRef.replace(/\n/g, '\n> ')}\n`;
             }
         }
 
@@ -212,7 +212,7 @@ function flushBatch(batchKey) {
 
         const descriptionParts = [];
         if (replyText) descriptionParts.push(replyText);
-        if (translatedText) descriptionParts.push(`**Translation :flag_us: (${userBatch.messages.length} msg${userBatch.messages.length > 1 ? 's' : ''})**:\n${translatedText}`);
+        if (translatedText) descriptionParts.push(`__**Translation :flag_us: (${userBatch.messages.length} msg${userBatch.messages.length > 1 ? 's' : ''})**__:\n${translatedText}`);
         if (combinedContent) {
             descriptionParts.push(`\n\n__**Original 🇮🇩 (${userBatch.messages.length} msg${userBatch.messages.length > 1 ? 's' : ''}):**__\n${combinedContent}`);
         }

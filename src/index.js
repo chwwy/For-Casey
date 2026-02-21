@@ -9,7 +9,8 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMessageReactions,
-        GatewayIntentBits.DirectMessages
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.GuildMessageTyping
     ],
     partials: [ // Partials are required to receive DMs!
         'CHANNEL', // Required to receive DMs
@@ -23,6 +24,7 @@ client.on(Events.MessageCreate, (message) => handleMessageCreate(message, client
 client.on(Events.MessageReactionAdd, (reaction, user) => require('./events/messageReactionAdd')(reaction, user, client));
 client.on(Events.MessageReactionRemove, (reaction, user) => require('./events/messageReactionRemove')(reaction, user, client));
 client.on(Events.InteractionCreate, (interaction) => require('./events/interactionCreate')(interaction, client));
+client.on(Events.TypingStart, (typing) => require('./features/translator/index').handleTyping(typing));
 
 if (!config.DISCORD_TOKEN) {
     console.error("Error: DISCORD_TOKEN is missing! Please set it in your environment variables.");

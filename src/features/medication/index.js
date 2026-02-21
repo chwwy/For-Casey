@@ -345,8 +345,36 @@ module.exports = {
             } else {
                 message.reply("No reminder configured for this channel.");
             }
+        } else if (command === 'import') {
+            const rawBody = message.content.slice('!pill import'.length).trim();
+            if (!rawBody) {
+                return message.reply("Please provide the JSON data. Example: `!pill import { ... }`");
+            }
+
+            try {
+                // Strip markdown code block characters if present
+                const cleanJsonStr = rawBody.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/g, '').trim();
+                const importedData = JSON.parse(cleanJsonStr);
+
+                if (importedData && importedData.instances) {
+                    const fs = require('fs');
+                    const path = require('path');
+                    const DATA_FILE = process.env.DATA_PATH || path.join(__dirname, '../../../medication_data.json');
+
+                    fs.writeFileSync(DATA_FILE, JSON.stringify(importedData, null, 2));
+                    console.log("Medication data successfully overwritten via !pill import");
+
+                    await ensurePersistentMessage(message.client);
+                    message.reply("Data successfully imported! The tracker has been updated.");
+                } else {
+                    message.reply("Invalid JSON: Missing `instances` object.");
+                }
+            } catch (err) {
+                console.error("Import failed:", err);
+                message.reply(`Failed to parse JSON: ${err.message}`);
+            }
         } else {
-            message.reply('Use `!pill refresh` or `!pill remind` to restore or test.');
+            message.reply('Use `!pill refresh`, `!pill remind`, or `!pill import` to restore or test.');
         }
         return true;
     },

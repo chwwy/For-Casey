@@ -1,54 +1,99 @@
 {
   "instances": {
     "nao": {
-      "currentWeekStart": "2026-02-09",
+      "currentWeekStart": "2026-02-16",
       "days": {
-        "Saturday": {
-          "AM": true,
-          "PM": true,
+        "Monday": {
+          "AM": "08:03 AM",
+          "PM": "12:20 AM",
           "mood": {
-            "AM": "I took two pills and it lowkey felt great even though it really took everything in me to get out of bed bro",
-            "PM": "Casey made an unsolicited command about my eyebags, but oddly I did not feel agitated at all. I also cleared out my wardrobe even though I was so tired after a full day of activities"
+            "AM": "I didn't sleep at all last night even though I was sooooo drowsy but I pulled through because I took a PHAT nap so I don't think I really needed sleep anyway",
+            "PM": "Full day out. Pretty okay but tired. Not related to meds I think. Because the activities aren't very brain-engaging"
           }
         },
-        "Sunday": {
-          "AM": "12:26 PM",
-          "PM": false,
+        "Tuesday": {
+          "AM": "08:59 AM",
+          "PM": "01:15 PM",
           "mood": {
-            "AM": "I didn't wake up for more than once during the night",
-            "PM": ""
+            "AM": "Sleep WAS great. You're actually telling me normal people sleep like this? Holy crappppppppppppppppp. It felt like a time skip. I didn't wake up once during the night!!!!!!!!!!!!!!!",
+            "PM": "Hung out the entire day and felt great. Didn’t get agitated by anything"
+          }
+        },
+        "Wednesday": {
+          "AM": "02:11 PM",
+          "PM": "11:12 PM",
+          "mood": {
+            "AM": "Great sleep.",
+            "PM": "Nothing worth noting. Pretty average nothing bad nothing good."
+          }
+        },
+        "Thursday": {
+          "AM": "02:35 PM",
+          "PM": "12:53 AM",
+          "mood": {
+            "AM": "Good sleep. The xanax hit much later on though so not very fast-acting anymore",
+            "PM": "I was so tired during the day and ended up sleeping for most of it. Now my sleep schedule is probably messed up"
+          }
+        },
+        "Friday": {
+          "AM": "11:01 AM",
+          "PM": "01:10 AM",
+          "mood": {
+            "AM": "Usually if I took a fat nap then I wouldn't be able to sleep during the night. But after taking Xanax I actually fell asleep just fine. So, adequate amount of sleep last night, but I'm still oddly tired now. Like really tired but mostly fatigue-like not sleepy",
+            "PM": "TIRED AS HELL AND NOT ABLE TO GET HORNY"
           }
         }
       },
       "messageIds": {
-        "1472313975386669218": "1472441841038393409"
+        "1472313975386669218": "1474655168715952169"
       }
     },
     "nightly": {
-      "currentWeekStart": "2026-02-09",
+      "currentWeekStart": "2026-02-16",
       "days": {
-        "Saturday": {
+        "Monday": {
           "AM": false,
-          "PM": true,
+          "PM": "07:56 PM",
           "mood": {
             "AM": "",
-            "PM": "bit stressed out bc of how busy day was + little sleep, tired all day. non-stop grinding irl side quests."
+            "PM": "loml is playing new game with me. making good memories after long monday of work. happy as could be. 🙂"
+          }
+        },
+        "Tuesday": {
+          "AM": false,
+          "PM": "12:15 AM",
+          "mood": {
+            "AM": "",
+            "PM": "so tired thru first half of day, little bit nauseous, ko'd w/ nao right when i got home for almost 6 hours. oops."
+          }
+        },
+        "Wednesday": {
+          "AM": false,
+          "PM": "08:57 AM",
+          "mood": {
+            "AM": "",
+            "PM": "we fell asleep together AGAIN from 7:00pm - 12:30am… oops. i cant wait to experience the same thing but irl. she helped calm me down bc i played my first val game in a week and there was a cheating jett. then we watched s1e2 of true detective together before bed yaayyy. average days are great days with her 😁"
+          }
+        },
+        "Thursday": {
+          "AM": false,
+          "PM": "09:20 PM",
+          "mood": {
+            "AM": "",
+            "PM": "super average day. tired but not tired. happy but not too happy. love my gf tho 😛"
           }
         },
         "Friday": {
           "AM": false,
-          "PM": true,
+          "PM": "07:57 PM",
           "mood": {
             "AM": "",
-            "PM": "ider dawwggg. ts a blur atp"
+            "PM": "PRETTY GOOOD ICLLLL"
           }
         }
       },
       "messageIds": {
-        "1472444626978869411": "1472445371996442655"
-      },
-      "reminders": {
-        "1472444626978869411": "1472461675637510154"
+        "1472444626978869411": "1474655174931910687"
       }
     }
   }

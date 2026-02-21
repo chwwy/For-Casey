@@ -90,5 +90,44 @@ module.exports = async (interaction, client) => {
             console.error("Failed to prompt DM:", e);
             await interaction.editReply({ content: `✅ Logged ${day} ${slot} checkmark! (Failed to send DM)` });
         }
+    } else if (interaction.commandName === 'remind') {
+        const slot = interaction.options.getString('slot');
+        const channelId = interaction.channelId;
+
+        // Identify Instance
+        const instance = config.getInstanceByChannel(channelId);
+        if (!instance) {
+            return interaction.reply({ content: 'This command can only be used in medication report channels.', ephemeral: true });
+        }
+
+        // Only allow the configured backupUserId for this instance to use the command
+        if (interaction.user.id !== instance.backupUserId) {
+            return interaction.reply({ content: '⛔ You are not authorized to create a reminder in this channel.', ephemeral: true });
+        }
+
+        if (!instance.slots.includes(slot)) {
+            return interaction.reply({ content: `Invalid slot '${slot}' for this channel. Available: ${instance.slots.join(', ')}`, ephemeral: true });
+        }
+
+        try {
+            let reminderMsg = `Hey! Don't forget to take your ${slot} pill and log it! 💊`;
+
+            if (instance.reminders && instance.reminders[slot]) {
+                reminderMsg = instance.reminders[slot].message;
+            } else if (instance.reminder && slot === 'PM') {
+                reminderMsg = instance.reminder.message;
+            } else if (instance.backupUserId) {
+                reminderMsg = `Hey, <@${instance.backupUserId}>! Don't forget to take your ${slot} pill and log it! 💊`;
+            }
+
+            const msg = await interaction.channel.send(reminderMsg);
+            data.setReminderMessageId(instance.key, channelId, msg.id);
+            console.log(`Manually created ${slot} slash command reminder for ${instance.key} in ${channelId}`);
+
+            return interaction.reply({ content: `✅ Created a ${slot} reminder!`, ephemeral: true });
+        } catch (e) {
+            console.error(`Failed to create reminder:`, e);
+            return interaction.reply({ content: `Failed to create reminder.`, ephemeral: true });
+        }
     }
 };

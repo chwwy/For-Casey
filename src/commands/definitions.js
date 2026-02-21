@@ -26,6 +26,17 @@ const commands = [
                 .addChoices(
                     { name: 'AM', value: 'AM' },
                     { name: 'PM', value: 'PM' }
+                )),
+    new SlashCommandBuilder()
+        .setName('remind')
+        .setDescription('Create a medication reminder for yourself.')
+        .addStringOption(option =>
+            option.setName('slot')
+                .setDescription('The time slot (AM or PM)')
+                .setRequired(true)
+                .addChoices(
+                    { name: 'AM', value: 'AM' },
+                    { name: 'PM', value: 'PM' }
                 ))
 ]
     .map(command => command.toJSON());

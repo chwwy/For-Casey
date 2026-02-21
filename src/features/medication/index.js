@@ -240,9 +240,27 @@ function initScheduler(client) {
 
     // Custom Reminder Schedules
     for (const [key, instanceConfig] of Object.entries(config.instances)) {
-        if (instanceConfig.reminder) {
+        // Handle new AM/PM split format
+        if (instanceConfig.reminders) {
+            for (const [slot, reminderInfo] of Object.entries(instanceConfig.reminders)) {
+                console.log(`Scheduling ${slot} reminder for ${key} at ${reminderInfo.time} (${instanceConfig.timezone})`);
+                cron.schedule(reminderInfo.time, async () => {
+                    console.log(`Sending ${slot} reminder for ${key}...`);
+                    for (const channelId of instanceConfig.channels) {
+                        try {
+                            const channel = await client.channels.fetch(channelId);
+                            const msg = await channel.send(reminderInfo.message);
+                            data.setReminderMessageId(key, channelId, msg.id);
+                        } catch (e) {
+                            console.error(`Failed to send reminder to ${channelId}:`, e);
+                        }
+                    }
+                }, { timezone: instanceConfig.timezone });
+            }
+        }
+        // Legacy fallback
+        else if (instanceConfig.reminder) {
             console.log(`Scheduling reminder for ${key} at ${instanceConfig.reminder.time} (${instanceConfig.timezone})`);
-
             cron.schedule(instanceConfig.reminder.time, async () => {
                 console.log(`Sending reminder for ${key}...`);
                 for (const channelId of instanceConfig.channels) {
@@ -254,9 +272,7 @@ function initScheduler(client) {
                         console.error(`Failed to send reminder to ${channelId}:`, e);
                     }
                 }
-            }, {
-                timezone: instanceConfig.timezone
-            });
+            }, { timezone: instanceConfig.timezone });
         }
     }
 
@@ -323,16 +339,32 @@ module.exports = {
             message.reply('Weekly data reset manually (Backups sent).');
         } else if (command === 'remind') {
             const channelId = message.channel.id;
+            const targetSlot = args[2]?.toUpperCase();
+
+            if (!targetSlot || !['AM', 'PM'].includes(targetSlot)) {
+                return message.reply("Please specify a slot: `!pill remind am` or `!pill remind pm`");
+            }
+
             let triggered = false;
 
             for (const [key, instanceConfig] of Object.entries(config.instances)) {
-                // Check if this channel is part of an instance and has a reminder
-                if (instanceConfig.channels.includes(channelId) && instanceConfig.reminder) {
+                if (instanceConfig.channels.includes(channelId) && instanceConfig.slots.includes(targetSlot)) {
                     try {
-                        const msg = await message.channel.send(instanceConfig.reminder.message);
+                        let reminderMsg = `Hey! Don't forget to take your ${targetSlot} pill and log it! 💊`;
+
+                        if (instanceConfig.reminders && instanceConfig.reminders[targetSlot]) {
+                            reminderMsg = instanceConfig.reminders[targetSlot].message;
+                        } else if (instanceConfig.reminder && targetSlot === 'PM') {
+                            // Legacy fallback
+                            reminderMsg = instanceConfig.reminder.message;
+                        } else if (instanceConfig.backupUserId) {
+                            reminderMsg = `Hey, <@${instanceConfig.backupUserId}>! Don't forget to take your ${targetSlot} pill and log it! 💊`;
+                        }
+
+                        const msg = await message.channel.send(reminderMsg);
                         data.setReminderMessageId(key, channelId, msg.id);
                         triggered = true;
-                        console.log(`Manually triggered reminder for ${key} in ${channelId}`);
+                        console.log(`Manually triggered ${targetSlot} reminder for ${key} in ${channelId}`);
                     } catch (e) {
                         console.error(`Failed to send manual reminder:`, e);
                     }
@@ -340,10 +372,9 @@ module.exports = {
             }
 
             if (triggered) {
-                // Optional: Delete the command message to keep it clean
                 message.delete().catch(() => { });
             } else {
-                message.reply("No reminder configured for this channel.");
+                message.reply(`No ${targetSlot} reminder configured/available for this channel.`);
             }
         } else if (command === 'import') {
             const rawBody = message.content.slice('!pill import'.length).trim();

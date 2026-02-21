@@ -138,30 +138,19 @@ async function ensurePersistentMessage(client) {
 
 async function sendBackupDM(client, key, instanceConfig, currentData) {
     const backupUserId = instanceConfig.backupUserId;
-    if (currentData && backupUserId) {
+    if (backupUserId) {
         try {
             const user = await client.users.fetch(backupUserId);
             if (user) {
-                const reportEmbed = new EmbedBuilder()
-                    .setTitle(`Weekly Backup: ${instanceConfig.name}`)
-                    .setDescription(`Week starting: ${currentData.currentWeekStart || 'Unknown'}`)
-                    .setColor(16765404);
+                // Generate the exact same rich embeds from the channel
+                const embeds = generateReportEmbeds(key);
 
-                const days = currentData.days || {};
-                let summary = "";
-                for (const day of DAY_NAMES) {
-                    const d = days[day] || {};
-                    const checks = instanceConfig.slots.map(s => `${s}: ${d[s] ? '✅' : '❌'}`).join(', ');
-                    const moodMap = d.mood || {};
-                    const moods = instanceConfig.slots.map(s => `${s} Mood: ${moodMap[s] || '-'}`).join('\n');
-                    summary += `**${day}**\n${checks}\n${moods}\n\n`;
+                // Add a small footer or header to the first embed to indicate it's a backup (optional)
+                if (embeds.length > 0) {
+                    embeds[0].setTitle(`Weekly Backup: ${instanceConfig.name} 💊`);
                 }
-                // Truncate safely
-                if (summary.length > 4000) summary = summary.substring(0, 4000) + "...";
 
-                reportEmbed.setDescription(summary);
-
-                const dmMsg = await user.send({ content: `Here is your weekly medication backup! 💊`, embeds: [reportEmbed] });
+                const dmMsg = await user.send({ content: `Here is your weekly medication backup! 💊`, embeds: embeds });
                 console.log(`Sent backup to ${backupUserId}`);
 
                 try {

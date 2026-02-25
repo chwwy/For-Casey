@@ -1,5 +1,6 @@
 const translatorFeature = require('../features/translator');
 const medicationFeature = require('../features/medication');
+const lyricsFeature = require('../features/lyrics');
 
 module.exports = async (message, client) => {
     // 1. Ignore self to prevent loops
@@ -13,6 +14,12 @@ module.exports = async (message, client) => {
     if (message.content.startsWith('!pill')) {
         await medicationFeature.handleMessage(message);
         return; // Stop processing valid command
+    }
+
+    // 2.5 Lyrics Feature
+    if (message.content.startsWith('!lyrics')) {
+        await lyricsFeature.handleMessage(message);
+        return;
     }
 
     // 3. Translator Feature

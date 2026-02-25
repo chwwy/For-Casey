@@ -20,6 +20,12 @@ async function handleMessage(message) {
 
         // Strip everything before the first recognized section header (e.g., [Verse 1])
         lyrics = lyrics.replace(/^[\s\S]*?(?=\[(?:Verse|Chorus|Intro|Hook|Bridge|Pre-Chorus|Outro|Guitar|Instrumental|Part|Refrain)[^\]]*\])/i, '');
+
+        // If there were no section headers, strip the Genius header (e.g. "4 Contributors...Lyrics")
+        if (!lyrics.trim().startsWith('[')) {
+            lyrics = lyrics.replace(/^[\s\S]*?Lyrics/i, '');
+        }
+
         // Clean up common trailing artifacts from genius-lyrics
         lyrics = lyrics.replace(/\d*Embed$/, '');
         lyrics = lyrics.replace(/You might also like/gi, '');

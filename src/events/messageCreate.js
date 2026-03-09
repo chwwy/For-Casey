@@ -3,8 +3,8 @@ const medicationFeature = require('../features/medication');
 const lyricsFeature = require('../features/lyrics');
 
 module.exports = async (message, client) => {
-    // 1. Ignore self to prevent loops
-    if (message.author.id === client.user.id) return;
+    // 1. Ignore ALL bots to prevent loops and massive API usage from other bots
+    if (message.author.bot) return;
 
     // Ignore specific discord ID
     if (message.author.id === '1229524851459493919') return;

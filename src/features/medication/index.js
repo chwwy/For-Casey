@@ -276,11 +276,11 @@ function initScheduler(client) {
         }
     }
 
-    // Daily Midnight Cleanup (Reset Buttons for new day)
+    // Daily 04:00 AM Cleanup (Reset Buttons for new day)
     for (const [key, instanceConfig] of Object.entries(config.instances)) {
-        console.log(`Scheduling daily reaction cleanup for ${key} at 00:00 (${instanceConfig.timezone})`);
+        console.log(`Scheduling daily reaction cleanup for ${key} at 04:00 (${instanceConfig.timezone})`);
 
-        cron.schedule('0 0 * * *', async () => {
+        cron.schedule('0 4 * * *', async () => {
             console.log(`Running midnight cleanup for ${key}...`);
             // Clear reactions to reset the "buttons" for the new day
             // We use removeAll() to avoid triggering individual remove events that might mess with data

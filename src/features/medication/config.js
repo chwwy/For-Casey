@@ -21,11 +21,17 @@ module.exports = {
             name: "Casey's Medication Report",
             channels: ['1472444626978869411'],
             timezone: 'America/Chicago',
-            slots: ['PM'],
+            slots: ['AM', 'PM'],
             backupUserId: '287489239250370560',
-            reminder: {
-                time: '55 19 * * *',
-                message: "Hey, <@287489239250370560>! Don't forget to take your pill and log it ❣️"
+            reminders: {
+                'AM': {
+                    time: '30 07 * * *',
+                    message: "Hey, <@287489239250370560>! Don't forget to take your morning pill and log it ❣️"
+                },
+                'PM': {
+                    time: '55 19 * * *',
+                    message: "Hey, <@287489239250370560>! Don't forget to take your night pill and log it ❣️"
+                }
             }
         }
     },

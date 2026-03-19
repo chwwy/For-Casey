@@ -105,8 +105,9 @@ async function ensurePersistentMessage(client) {
 
             // Add Logging Buttons
             const row = new ActionRowBuilder();
+            const isSingleSlot = instanceConfig.slots.length === 1;
             for (const slot of instanceConfig.slots) {
-                const label = slot === 'AM' ? 'Log Morning (AM)' : 'Log Night (PM)';
+                const label = isSingleSlot ? 'Log Medication' : (slot === 'AM' ? 'Log Morning (AM)' : 'Log Night (PM)');
                 const emoji = slot === 'AM' ? '🌞' : '💤';
                 row.addComponents(
                     new ButtonBuilder()

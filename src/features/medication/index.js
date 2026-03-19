@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const cron = require('node-cron');
 const data = require('./data');
 const config = require('./config');
@@ -101,36 +101,41 @@ async function ensurePersistentMessage(client) {
             }
 
             const embeds = generateReportEmbeds(key);
+            const components = [];
+
+            // Add Logging Buttons
+            const row = new ActionRowBuilder();
+            for (const slot of instanceConfig.slots) {
+                const label = slot === 'AM' ? 'Log Morning (AM)' : 'Log Night (PM)';
+                const emoji = slot === 'AM' ? '🌞' : '💤';
+                row.addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`log_btn_${slot}_${key}`)
+                        .setLabel(label)
+                        .setEmoji(emoji)
+                        .setStyle(ButtonStyle.Secondary)
+                );
+            }
+
+            if (row.components.length > 0) {
+                components.push(row);
+            }
 
             if (message) {
-                await message.edit({ embeds: embeds });
+                await message.edit({ embeds: embeds, components: components });
             } else {
-                message = await channel.send({ embeds: embeds });
+                message = await channel.send({ embeds: embeds, components: components });
                 data.setMessageId(key, channelId, message.id);
             }
 
 
-            // Always ensure reactions exist based on slots
+            // cleanup reactions if any
             try {
-                // Cleanup unwanted reactions (Legacy)
-                const unwanted = ['📓', '🛏️'];
-                for (const emoji of unwanted) {
-                    const reaction = message.reactions.cache.find(r => r.emoji.name === emoji);
-                    if (reaction) {
-                        try {
-                            await reaction.remove();
-                        } catch (e) { /* ignore cleanup errors */ }
-                    }
-                }
-
-                if (instanceConfig.slots.includes('AM')) {
-                    await message.react('🌞');
-                }
-                if (instanceConfig.slots.includes('PM')) {
-                    await message.react('💤');
+                if (message.reactions.cache.size > 0) {
+                    await message.reactions.removeAll();
                 }
             } catch (error) {
-                console.error('Failed to react to message:', error);
+                console.error('Failed to clear reactions:', error);
             }
         }
     }
@@ -202,17 +207,8 @@ async function resetAndClear(client, force = false) {
                 const channel = await client.channels.fetch(channelId);
                 const message = await channel.messages.fetch(messageId);
                 if (message) {
-                    // Re-react and update
-                    await message.reactions.removeAll();
-                    if (instanceConfig.slots.includes('AM')) {
-                        await message.react('🌞');
-                    }
-                    if (instanceConfig.slots.includes('PM')) {
-                        await message.react('💤');
-                    }
-
-                    const embeds = generateReportEmbeds(key);
-                    await message.edit({ embeds: embeds });
+                    // Just refresh the entire message (Embeds + Buttons)
+                    await ensurePersistentMessage(client);
 
 
                 }
@@ -282,32 +278,7 @@ function initScheduler(client) {
 
         cron.schedule('0 4 * * *', async () => {
             console.log(`Running midnight cleanup for ${key}...`);
-            // Clear reactions to reset the "buttons" for the new day
-            // We use removeAll() to avoid triggering individual remove events that might mess with data
-            const savedIds = data.getMessageIds(key);
-            for (const [channelId, messageId] of Object.entries(savedIds)) {
-                try {
-                    const channel = await client.channels.fetch(channelId);
-                    const message = await channel.messages.fetch(messageId);
-                    if (message) {
-                        await message.reactions.removeAll();
-                        // Re-add buttons
-                        if (instanceConfig.slots.includes('AM')) {
-                            await message.react('🌞');
-                        }
-                        if (instanceConfig.slots.includes('PM')) {
-                            await message.react('💤');
-                        }
-                        console.log(`Reset reactions for ${key} in ${channelId}`);
-                    }
-                } catch (e) {
-                    console.error(`Failed to cleanup reactions for ${channelId}:`, e);
-                    if (e.code === 10003 || e.status === 404) {
-                        console.log(`Detected deleted channel ${channelId}, cleaning up...`);
-                        data.removeMessageId(key, channelId);
-                    }
-                }
-            }
+            await ensurePersistentMessage(client);
         }, {
             timezone: instanceConfig.timezone
         });

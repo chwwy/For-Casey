@@ -24,16 +24,8 @@ module.exports = async (reaction, user, client) => {
 
     const { key: instanceKey, timezone, slots } = instance;
 
-    // 3. Determine Time Slot or Action based on reaction
-    let timeSlot = null;
-
-    if (reaction.emoji.name === '🌞' && slots.includes('AM')) {
-        timeSlot = 'AM';
-    } else if ((reaction.emoji.name === '💤' || reaction.emoji.name === 'zzz') && slots.includes('PM')) {
-        timeSlot = 'PM';
-    } else {
-        return; // Ignore other reactions
-    }
+    // DISABLED: Using buttons/modals instead of reactions
+    return;
 
     const dayName = data.getCurrentDayName(timezone);
     console.log(`Processing CHECK & MOOD for ${dayName} ${timeSlot} by ${user.username} in ${instanceKey}`);

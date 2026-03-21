@@ -149,6 +149,27 @@ module.exports = async (interaction, client) => {
             // Sync Messages
             await ensurePersistentMessage(client);
 
+            // Cleanup: delete other messages in the channel to keep it clean
+            try {
+                const channel = interaction.channel;
+                if (channel) {
+                    const savedIds = data.getMessageIds(instanceKey);
+                    const persistentMessageId = savedIds[channel.id];
+
+                    if (persistentMessageId) { // Only cleanup in designated medication channels
+                        const messages = await channel.messages.fetch({ limit: 50 });
+                        for (const [msgId, msg] of messages) {
+                            if (msgId !== persistentMessageId) {
+                                await msg.delete().catch(() => { });
+                            }
+                        }
+                        console.log(`Cleaned up extra messages in ${channel.id} after log.`);
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to cleanup messages after modal:", e);
+            }
+
             // Reply Success
             const encouragements = [
                 "Proud of you! 💖", "Keep it up! ✨", "You're doing great! 🌸", "Sending you hugs! 🫂",

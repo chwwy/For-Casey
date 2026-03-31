@@ -107,8 +107,24 @@ async function ensurePersistentMessage(client) {
             const row = new ActionRowBuilder();
             const isSingleSlot = instanceConfig.slots.length === 1;
             for (const slot of instanceConfig.slots) {
-                const label = isSingleSlot ? 'Log Medication' : (slot === 'AM' ? 'Log Morning (AM)' : 'Log Night (PM)');
-                const emoji = slot === 'AM' ? '🌞' : '💤';
+                let label, emoji;
+                if (isSingleSlot) {
+                    label = 'Log Medication';
+                    emoji = '💊';
+                } else if (slot === 'AM') {
+                    label = 'Log Morning (AM)';
+                    emoji = '🌞';
+                } else if (slot === 'PM') {
+                    label = 'Log Evening (PM)';
+                    emoji = '🌆';
+                } else if (slot === 'Sleep') {
+                    label = 'Log Sleep';
+                    emoji = '💤';
+                } else {
+                    label = `Log ${slot}`;
+                    emoji = '💊';
+                }
+
                 row.addComponents(
                     new ButtonBuilder()
                         .setCustomId(`log_btn_${slot}_${key}`)
@@ -311,10 +327,12 @@ module.exports = {
             message.reply('Weekly data reset manually (Backups sent).');
         } else if (command === 'remind') {
             const channelId = message.channel.id;
-            const targetSlot = args[2]?.toUpperCase();
+            const inputSlot = args[2]?.toLowerCase();
+            const slotMap = { 'am': 'AM', 'pm': 'PM', 'sleep': 'Sleep' };
+            const targetSlot = slotMap[inputSlot];
 
-            if (!targetSlot || !['AM', 'PM'].includes(targetSlot)) {
-                return message.reply("Please specify a slot: `!pill remind am` or `!pill remind pm`");
+            if (!targetSlot) {
+                return message.reply("Please specify a slot: `!pill remind am`, `!pill remind pm`, or `!pill remind sleep`");
             }
 
             let triggered = false;

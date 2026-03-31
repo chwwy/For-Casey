@@ -21,22 +21,24 @@ const commands = [
                 ))
         .addStringOption(option =>
             option.setName('slot')
-                .setDescription('The time slot (AM or PM)')
+                .setDescription('The time slot (AM, PM, or Sleep)')
                 .setRequired(false)
                 .addChoices(
                     { name: 'AM', value: 'AM' },
-                    { name: 'PM', value: 'PM' }
+                    { name: 'PM', value: 'PM' },
+                    { name: 'Sleep', value: 'Sleep' }
                 )),
     new SlashCommandBuilder()
         .setName('remind')
         .setDescription('Create a medication reminder for yourself.')
         .addStringOption(option =>
             option.setName('slot')
-                .setDescription('The time slot (AM or PM)')
+                .setDescription('The time slot (AM, PM, or Sleep)')
                 .setRequired(true)
                 .addChoices(
                     { name: 'AM', value: 'AM' },
-                    { name: 'PM', value: 'PM' }
+                    { name: 'PM', value: 'PM' },
+                    { name: 'Sleep', value: 'Sleep' }
                 ))
 ]
     .map(command => command.toJSON());

@@ -100,11 +100,11 @@ function updateWeeklyCheck(instanceKey, timezone, dayName, timeSlot, value = tru
     checkWeekReset(instance, timezone);
 
     if (!instance.days[dayName]) {
-        instance.days[dayName] = { AM: false, PM: false };
+        instance.days[dayName] = { AM: false, PM: false, Sleep: false };
     }
 
     if (!instance.days[dayName].mood) {
-        instance.days[dayName].mood = { AM: "", PM: "" };
+        instance.days[dayName].mood = { AM: "", PM: "", Sleep: "" };
     }
 
     let storedValue = value;
@@ -126,11 +126,11 @@ function logMood(instanceKey, timezone, dayName, timeSlot, content) {
     checkWeekReset(instance, timezone);
 
     if (!instance.days[dayName]) {
-        instance.days[dayName] = { AM: false, PM: false };
+        instance.days[dayName] = { AM: false, PM: false, Sleep: false };
     }
 
     if (!instance.days[dayName].mood) {
-        instance.days[dayName].mood = { AM: "", PM: "" };
+        instance.days[dayName].mood = { AM: "", PM: "", Sleep: "" };
     }
 
     instance.days[dayName].mood[timeSlot] = content;

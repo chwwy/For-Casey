@@ -28,7 +28,7 @@ module.exports = async (interaction, client) => {
                 if (slots.length === 1) {
                     slot = slots[0];
                 } else {
-                    return interaction.reply({ content: `Please specify a time slot (AM or PM) for this channel. Available: ${slots.join(', ')}`, ephemeral: true });
+                    return interaction.reply({ content: `Please specify a time slot. Available: ${slots.join(', ')}`, ephemeral: true });
                 }
             } else if (!slots.includes(slot)) {
                 return interaction.reply({ content: `Invalid slot '${slot}' for this channel. Available: ${slots.join(', ')}`, ephemeral: true });

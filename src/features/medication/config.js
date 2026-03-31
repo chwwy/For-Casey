@@ -4,7 +4,7 @@ module.exports = {
             name: "Nao's Medication Report",
             channels: ['1472313975386669218'],
             timezone: 'Asia/Jakarta',
-            slots: ['AM', 'PM'],
+            slots: ['AM', 'PM', 'Sleep'],
             backupUserId: '860909419226595328',
             reminders: {
                 'AM': {
@@ -12,8 +12,12 @@ module.exports = {
                     message: "Hey, <@860909419226595328>! Don't forget to take your morning pill and log it ❣️"
                 },
                 'PM': {
+                    time: '00 18 * * *',
+                    message: "Hey, <@860909419226595328>! Don't forget to take your evening pill and log it ❣️"
+                },
+                'Sleep': {
                     time: '00 21 * * *',
-                    message: "Hey, <@860909419226595328>! Don't forget to take your night pill and log it ❣️"
+                    message: "Hey, <@860909419226595328>! Don't forget to take your sleep pill and log it before going to sleep ❣️"
                 }
             }
         },

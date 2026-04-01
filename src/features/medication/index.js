@@ -262,7 +262,14 @@ function initScheduler(client) {
                     for (const channelId of instanceConfig.channels) {
                         try {
                             const channel = await client.channels.fetch(channelId);
-                            const msg = await channel.send(reminderInfo.message);
+                            const row = new ActionRowBuilder().addComponents(
+                                new ButtonBuilder()
+                                    .setCustomId(`remind_again_${slot}_${key}`)
+                                    .setLabel('Remind me again')
+                                    .setStyle(ButtonStyle.Primary)
+                                    .setEmoji('⏰')
+                            );
+                            const msg = await channel.send({ content: reminderInfo.message, components: [row] });
                             data.setReminderMessageId(key, channelId, msg.id);
                         } catch (e) {
                             console.error(`Failed to send reminder to ${channelId}:`, e);
@@ -279,7 +286,14 @@ function initScheduler(client) {
                 for (const channelId of instanceConfig.channels) {
                     try {
                         const channel = await client.channels.fetch(channelId);
-                        const msg = await channel.send(instanceConfig.reminder.message);
+                        const row = new ActionRowBuilder().addComponents(
+                            new ButtonBuilder()
+                                .setCustomId(`remind_again_PM_${key}`)
+                                .setLabel('Remind me again')
+                                .setStyle(ButtonStyle.Primary)
+                                .setEmoji('⏰')
+                        );
+                        const msg = await channel.send({ content: instanceConfig.reminder.message, components: [row] });
                         data.setReminderMessageId(key, channelId, msg.id);
                     } catch (e) {
                         console.error(`Failed to send reminder to ${channelId}:`, e);
@@ -351,7 +365,14 @@ module.exports = {
                             reminderMsg = `Hey, <@${instanceConfig.backupUserId}>! Don't forget to take your ${targetSlot} pill and log it! 💊`;
                         }
 
-                        const msg = await message.channel.send(reminderMsg);
+                        const row = new ActionRowBuilder().addComponents(
+                            new ButtonBuilder()
+                                .setCustomId(`remind_again_${targetSlot}_${key}`)
+                                .setLabel('Remind me again')
+                                .setStyle(ButtonStyle.Primary)
+                                .setEmoji('⏰')
+                        );
+                        const msg = await message.channel.send({ content: reminderMsg, components: [row] });
                         data.setReminderMessageId(key, channelId, msg.id);
                         triggered = true;
                         console.log(`Manually triggered ${targetSlot} reminder for ${key} in ${channelId}`);

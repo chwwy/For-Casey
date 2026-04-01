@@ -1,4 +1,4 @@
-const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const data = require('../features/medication/data');
 const config = require('../features/medication/config');
 const { ensurePersistentMessage } = require('../features/medication/index');
@@ -78,9 +78,17 @@ module.exports = async (interaction, client) => {
                     reminderMsg = `Hey, <@${instance.backupUserId}>! Don't forget to take your ${slot} pill and log it! 💊`;
                 }
 
-                const msg = await interaction.channel.send(reminderMsg);
+                const row = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`remind_again_${slot}_${instance.key}`)
+                        .setLabel('Remind me again')
+                        .setStyle(ButtonStyle.Primary)
+                        .setEmoji('⏰')
+                );
+
+                const msg = await interaction.channel.send({ content: reminderMsg, components: [row] });
                 data.setReminderMessageId(instance.key, channelId, msg.id);
-                return interaction.reply({ content: `✅ Created a ${slot} reminder!`, ephemeral: true });
+                return interaction.reply({ content: `✅ Created a ${slot} reminder in this channel!`, ephemeral: true });
             } catch (e) {
                 console.error(`Failed to create reminder:`, e);
                 return interaction.reply({ content: `Failed to create reminder.`, ephemeral: true });
@@ -124,6 +132,48 @@ module.exports = async (interaction, client) => {
             modal.addComponents(new ActionRowBuilder().addComponents(moodInput));
 
             await interaction.showModal(modal);
+        } else if (customId.startsWith('remind_again_')) {
+            const parts = customId.split('_');
+            const slot = parts[2];
+            const instanceKey = parts[3];
+
+            const instance = config.instances[instanceKey];
+            if (!instance) return;
+
+            if (interaction.user.id !== instance.backupUserId) {
+                return interaction.reply({ content: '⛔ You are not authorized.', ephemeral: true });
+            }
+
+            await interaction.reply({ content: `Got it! I will remind you again about your ${slot} pill in 30 minutes. ⏰`, ephemeral: true });
+
+            setTimeout(async () => {
+                try {
+                    const channel = await client.channels.fetch(interaction.channelId);
+                    if (!channel) return;
+
+                    let reminderMsg = `Hey! Don't forget to take your ${slot} pill! 💊`;
+                    if (instance.reminders && instance.reminders[slot]) {
+                        reminderMsg = instance.reminders[slot].message;
+                    } else if (instance.reminder && slot === 'PM') {
+                        reminderMsg = instance.reminder.message;
+                    } else if (instance.backupUserId) {
+                        reminderMsg = `Hey, <@${instance.backupUserId}>! Don't forget to take your ${slot} pill and log it! 💊`;
+                    }
+
+                    const row = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`remind_again_${slot}_${instanceKey}`)
+                            .setLabel('Remind me again')
+                            .setStyle(ButtonStyle.Primary)
+                            .setEmoji('⏰')
+                    );
+
+                    const msg = await channel.send({ content: `**Reminder!**\n${reminderMsg}`, components: [row] });
+                    data.setReminderMessageId(instanceKey, channel.id, msg.id);
+                } catch (e) {
+                    console.error('Failed to send deferred reminder:', e);
+                }
+            }, 30 * 60 * 1000);
         }
     }
 

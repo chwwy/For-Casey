@@ -117,7 +117,7 @@ async function ensurePersistentMessage(client) {
                 let label, emoji;
                 if (isSingleSlot) {
                     label = 'Log Medication';
-                    emoji = '💊';
+                    emoji = key === 'nao' ? '✅' : '💊';
                 } else if (slot === 'AM') {
                     label = 'Log Morning (AM)';
                     emoji = '🌞';
@@ -155,31 +155,9 @@ async function ensurePersistentMessage(client) {
 
             // cleanup reactions if any
             try {
-<<<<<<< HEAD
-                // Cleanup unwanted reactions (Legacy)
-                const unwanted = ['📓', '🛏️'];
-                for (const emoji of unwanted) {
-                    const reaction = message.reactions.cache.find(r => r.emoji.name === emoji);
-                    if (reaction) {
-                        try {
-                            await reaction.remove();
-                        } catch (e) { /* ignore cleanup errors */ }
-                    }
-                }
 
-                if (instanceConfig.slots.includes('AM')) {
-                    if (key === 'nao') {
-                        await message.react('✅');
-                    } else {
-                        await message.react('🌞');
-                    }
-                }
-                if (instanceConfig.slots.includes('PM')) {
-                    await message.react('💤');
-=======
                 if (message.reactions.cache.size > 0) {
                     await message.reactions.removeAll();
->>>>>>> 51810791e3ceeba01fa8b236b8435f14a84cb6c8
                 }
             } catch (error) {
                 console.error('Failed to clear reactions:', error);
@@ -254,26 +232,8 @@ async function resetAndClear(client, force = false) {
                 const channel = await client.channels.fetch(channelId);
                 const message = await channel.messages.fetch(messageId);
                 if (message) {
-<<<<<<< HEAD
-                    // Re-react and update
-                    await message.reactions.removeAll();
-                    if (instanceConfig.slots.includes('AM')) {
-                        if (key === 'nao') {
-                            await message.react('✅');
-                        } else {
-                            await message.react('🌞');
-                        }
-                    }
-                    if (instanceConfig.slots.includes('PM')) {
-                        await message.react('💤');
-                    }
-
-                    const embeds = generateReportEmbeds(key);
-                    await message.edit({ embeds: embeds });
-=======
                     // Just refresh the entire message (Embeds + Buttons)
                     await ensurePersistentMessage(client);
->>>>>>> 51810791e3ceeba01fa8b236b8435f14a84cb6c8
 
 
                 }
@@ -357,40 +317,7 @@ function initScheduler(client) {
 
         cron.schedule('0 4 * * *', async () => {
             console.log(`Running midnight cleanup for ${key}...`);
-<<<<<<< HEAD
-            // Clear reactions to reset the "buttons" for the new day
-            // We use removeAll() to avoid triggering individual remove events that might mess with data
-            const savedIds = data.getMessageIds(key);
-            for (const [channelId, messageId] of Object.entries(savedIds)) {
-                try {
-                    const channel = await client.channels.fetch(channelId);
-                    const message = await channel.messages.fetch(messageId);
-                    if (message) {
-                        await message.reactions.removeAll();
-                        // Re-add buttons
-                        if (instanceConfig.slots.includes('AM')) {
-                            if (key === 'nao') {
-                                await message.react('✅');
-                            } else {
-                                await message.react('🌞');
-                            }
-                        }
-                        if (instanceConfig.slots.includes('PM')) {
-                            await message.react('💤');
-                        }
-                        console.log(`Reset reactions for ${key} in ${channelId}`);
-                    }
-                } catch (e) {
-                    console.error(`Failed to cleanup reactions for ${channelId}:`, e);
-                    if (e.code === 10003 || e.status === 404) {
-                        console.log(`Detected deleted channel ${channelId}, cleaning up...`);
-                        data.removeMessageId(key, channelId);
-                    }
-                }
-            }
-=======
             await ensurePersistentMessage(client);
->>>>>>> 51810791e3ceeba01fa8b236b8435f14a84cb6c8
         }, {
             timezone: instanceConfig.timezone
         });

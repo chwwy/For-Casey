@@ -117,6 +117,31 @@ module.exports = async (interaction, client) => {
 
             const day = data.getCurrentDayName(instance.timezone);
 
+            if (instanceKey === 'nao') {
+                data.updateWeeklyCheck(instanceKey, instance.timezone, day, slot, true);
+                await ensurePersistentMessage(client);
+
+                try {
+                    const channel = interaction.channel;
+                    if (channel) {
+                        const savedIds = data.getMessageIds(instanceKey);
+                        const persistentMessageId = savedIds[channel.id];
+                        if (persistentMessageId) {
+                            const messages = await channel.messages.fetch({ limit: 50 });
+                            for (const [msgId, msg] of messages) {
+                                if (msgId !== persistentMessageId) {
+                                    await msg.delete().catch(() => { });
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Cleanup failed:", e);
+                }
+
+                return interaction.reply({ content: `✅ Logged for **${day} ${slot}**!`, ephemeral: true });
+            }
+
             // Show Modal
             const modal = new ModalBuilder()
                 .setCustomId(`log_modal:${slot}:${instanceKey}:${day}`)

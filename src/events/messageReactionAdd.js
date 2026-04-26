@@ -24,6 +24,7 @@ module.exports = async (reaction, user, client) => {
 
     const { key: instanceKey, timezone, slots } = instance;
 
+<<<<<<< HEAD
     // 3. Determine Time Slot or Action based on reaction
     let timeSlot = null;
 
@@ -34,6 +35,10 @@ module.exports = async (reaction, user, client) => {
     } else {
         return; // Ignore other reactions
     }
+=======
+    // DISABLED: Using buttons/modals instead of reactions
+    return;
+>>>>>>> 51810791e3ceeba01fa8b236b8435f14a84cb6c8
 
     const dayName = data.getCurrentDayName(timezone);
     console.log(`Processing CHECK & MOOD for ${dayName} ${timeSlot} by ${user.username} in ${instanceKey}`);
@@ -58,22 +63,18 @@ module.exports = async (reaction, user, client) => {
         }
     }
 
-    // NEW: Delete Reminder if exists
+    // NEW: Delete ALL other messages in the channel to keep it clean
     try {
-        const reminderId = data.getReminderMessageId(instanceKey, reaction.message.channel.id);
-        if (reminderId) {
-            const channel = reaction.message.channel;
-            const reminderMsg = await channel.messages.fetch(reminderId).catch(() => null);
-            if (reminderMsg) {
-                await reminderMsg.delete();
-                console.log(`Deleted reminder ${reminderId} for ${instanceKey}`);
-                // Clear from data? Maybe not strictly needed if we just catch 404, but clean is better.
-                // But setReminderMessageId doesn't have a clear function. 
-                // We'll leave it, subsequent fetches will fail and be ignored.
+        const channel = reaction.message.channel;
+        const messages = await channel.messages.fetch({ limit: 50 }); // fetch last 50 messages
+        for (const [msgId, msg] of messages) {
+            if (msgId !== reaction.message.id) {
+                await msg.delete().catch(() => {});
             }
         }
+        console.log(`Cleaned up extra messages in ${channel.id}`);
     } catch (e) {
-        console.error("Failed to delete reminder:", e);
+        console.error("Failed to cleanup messages:", e);
     }
 
     // 5. Trigger Mood Prompt via DM (Skip for Nao)

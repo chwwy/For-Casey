@@ -1,133 +1,233 @@
+const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const data = require('../features/medication/data');
 const config = require('../features/medication/config');
-const { generateReportEmbeds } = require('../features/medication/index');
+const { ensurePersistentMessage } = require('../features/medication/index');
 
 module.exports = async (interaction, client) => {
-    if (!interaction.isChatInputCommand()) return;
+    // 1. Handle Slash Commands
+    if (interaction.isChatInputCommand()) {
+        if (interaction.commandName === 'log') {
+            const day = interaction.options.getString('day');
+            let slot = interaction.options.getString('slot');
 
-    if (interaction.commandName === 'log') {
-        const day = interaction.options.getString('day');
-        let slot = interaction.options.getString('slot');
-
-        // Identify Instance
-        const instance = config.getInstanceByChannel(interaction.channelId);
-        if (!instance) {
-            return interaction.reply({ content: 'This command can only be used in medication report channels.', ephemeral: true });
-        }
-
-        // Authorization Check
-        // Only allow the configured backupUserId for this instance to use the command
-        if (interaction.user.id !== instance.backupUserId) {
-            return interaction.reply({ content: '⛔ You are not authorized to log for this medication report.', ephemeral: true });
-        }
-
-        const { key: instanceKey, timezone, slots } = instance;
-
-        // Defer immediately to prevent timeout
-        await interaction.deferReply({ ephemeral: true });
-
-        // Validate Slot
-        if (!slot) {
-            if (slots.length === 1) {
-                slot = slots[0]; // Default to the only slot
-            } else {
-                return interaction.editReply({ content: `Please specify a time slot (AM or PM) for this channel. Available: ${slots.join(', ')}` });
+            // Identify Instance
+            const instance = config.getInstanceByChannel(interaction.channelId);
+            if (!instance) {
+                return interaction.reply({ content: 'This command can only be used in medication report channels.', ephemeral: true });
             }
-        } else {
-            if (!slots.includes(slot)) {
-                return interaction.editReply({ content: `Invalid slot '${slot}' for this channel. Available: ${slots.join(', ')}` });
+
+            // Authorization Check
+            if (interaction.user.id !== instance.backupUserId) {
+                return interaction.reply({ content: '⛔ You are not authorized to log for this medication report.', ephemeral: true });
             }
-        }
 
-        // Log Checkmark
-        // We use the provided day, not "today"
-        data.updateWeeklyCheck(instanceKey, timezone, day, slot, true);
+            const { key: instanceKey, slots } = instance;
 
-        // Update Embeds
-        const savedIds = data.getMessageIds(instanceKey);
-        for (const [channelId, messageId] of Object.entries(savedIds)) {
-            try {
-                const channel = await client.channels.fetch(channelId);
-                const msg = await channel.messages.fetch(messageId);
-                const newEmbeds = generateReportEmbeds(instanceKey);
-                await msg.edit({ embeds: newEmbeds });
-            } catch (e) {
-                console.error('Sync error:', e);
-            }
-        }
-
-        // Send DM Prompt
-        try {
-            const user = interaction.user;
-            const dmChannel = await user.createDM();
-            await dmChannel.send(`**${instance.name} (${day} ${slot})**\nHow were you feeling last ${day}? (Reply here to log) 🎀`);
-
-            const filter = m => m.author.id === user.id;
-            const collector = dmChannel.createMessageCollector({ filter, max: 1, time: 300000 }); // 5 min
-
-            collector.on('collect', async m => {
-                const content = m.content;
-                // Log mood for the SPECIFIC day
-                data.logMood(instanceKey, timezone, day, slot, content);
-
-                await dmChannel.send("✅ Logged!");
-
-                // Sync Embeds Again
-                const updatedIds = data.getMessageIds(instanceKey);
-                for (const [channelId, messageId] of Object.entries(updatedIds)) {
-                    try {
-                        const ch = await client.channels.fetch(channelId);
-                        const msg = await ch.messages.fetch(messageId);
-                        const newEmbeds = generateReportEmbeds(instanceKey);
-                        await msg.edit({ embeds: newEmbeds });
-                    } catch (e) { }
+            // Validate Slot
+            if (!slot) {
+                if (slots.length === 1) {
+                    slot = slots[0];
+                } else {
+                    return interaction.reply({ content: `Please specify a time slot. Available: ${slots.join(', ')}`, ephemeral: true });
                 }
-            });
-
-            await interaction.editReply({ content: `✅ Logged ${day} ${slot} checkmark! Check your DMs to log your mood.` });
-
-        } catch (e) {
-            console.error("Failed to prompt DM:", e);
-            await interaction.editReply({ content: `✅ Logged ${day} ${slot} checkmark! (Failed to send DM)` });
-        }
-    } else if (interaction.commandName === 'remind') {
-        const slot = interaction.options.getString('slot');
-        const channelId = interaction.channelId;
-
-        // Identify Instance
-        const instance = config.getInstanceByChannel(channelId);
-        if (!instance) {
-            return interaction.reply({ content: 'This command can only be used in medication report channels.', ephemeral: true });
-        }
-
-        // Only allow the configured backupUserId for this instance to use the command
-        if (interaction.user.id !== instance.backupUserId) {
-            return interaction.reply({ content: '⛔ You are not authorized to create a reminder in this channel.', ephemeral: true });
-        }
-
-        if (!instance.slots.includes(slot)) {
-            return interaction.reply({ content: `Invalid slot '${slot}' for this channel. Available: ${instance.slots.join(', ')}`, ephemeral: true });
-        }
-
-        try {
-            let reminderMsg = `Hey! Don't forget to take your ${slot} pill and log it! 💊`;
-
-            if (instance.reminders && instance.reminders[slot]) {
-                reminderMsg = instance.reminders[slot].message;
-            } else if (instance.reminder && slot === 'PM') {
-                reminderMsg = instance.reminder.message;
-            } else if (instance.backupUserId) {
-                reminderMsg = `Hey, <@${instance.backupUserId}>! Don't forget to take your ${slot} pill and log it! 💊`;
+            } else if (!slots.includes(slot)) {
+                return interaction.reply({ content: `Invalid slot '${slot}' for this channel. Available: ${slots.join(', ')}`, ephemeral: true });
             }
 
-            const msg = await interaction.channel.send(reminderMsg);
-            data.setReminderMessageId(instance.key, channelId, msg.id);
-            console.log(`Manually created ${slot} slash command reminder for ${instance.key} in ${channelId}`);
+            // Show Modal
+            const modal = new ModalBuilder()
+                .setCustomId(`log_modal:${slot}:${instanceKey}:${day}`)
+                .setTitle(`Log ${day} ${slot}`);
 
-            return interaction.reply({ content: `✅ Created a ${slot} reminder!`, ephemeral: true });
-        } catch (e) {
-            console.error(`Failed to create reminder:`, e);
-            return interaction.reply({ content: `Failed to create reminder.`, ephemeral: true });
+            const moodInput = new TextInputBuilder()
+                .setCustomId('mood')
+                .setLabel('How did you feel? ❤️')
+                .setPlaceholder('Enter your mood or notes (optional)')
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(false);
+
+            modal.addComponents(new ActionRowBuilder().addComponents(moodInput));
+
+            await interaction.showModal(modal);
+
+        } else if (interaction.commandName === 'remind') {
+            const slot = interaction.options.getString('slot');
+            const channelId = interaction.channelId;
+
+            // Identify Instance
+            const instance = config.getInstanceByChannel(channelId);
+            if (!instance) {
+                return interaction.reply({ content: 'This command can only be used in medication report channels.', ephemeral: true });
+            }
+
+            if (interaction.user.id !== instance.backupUserId) {
+                return interaction.reply({ content: '⛔ You are not authorized to create a reminder in this channel.', ephemeral: true });
+            }
+
+            if (!instance.slots.includes(slot)) {
+                return interaction.reply({ content: `Invalid slot '${slot}' for this channel. Available: ${instance.slots.join(', ')}`, ephemeral: true });
+            }
+
+            try {
+                let reminderMsg = `Hey! Don't forget to take your ${slot} pill and log it! 💊`;
+                if (instance.reminders && instance.reminders[slot]) {
+                    reminderMsg = instance.reminders[slot].message;
+                } else if (instance.reminder && slot === 'PM') {
+                    reminderMsg = instance.reminder.message;
+                } else if (instance.backupUserId) {
+                    reminderMsg = `Hey, <@${instance.backupUserId}>! Don't forget to take your ${slot} pill and log it! 💊`;
+                }
+
+                const row = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`remind_again_${slot}_${instance.key}`)
+                        .setLabel('Remind me again')
+                        .setStyle(ButtonStyle.Primary)
+                        .setEmoji('⏰')
+                );
+
+                const msg = await interaction.channel.send({ content: reminderMsg, components: [row] });
+                data.setReminderMessageId(instance.key, channelId, msg.id);
+                return interaction.reply({ content: `✅ Created a ${slot} reminder in this channel!`, ephemeral: true });
+            } catch (e) {
+                console.error(`Failed to create reminder:`, e);
+                return interaction.reply({ content: `Failed to create reminder.`, ephemeral: true });
+            }
+        }
+    }
+
+    // 2. Handle Button Interactions
+    if (interaction.isButton()) {
+        const customId = interaction.customId;
+
+        if (customId.startsWith('log_btn_')) {
+            // log_btn_[slot]_[key]
+            const parts = customId.split('_');
+            const slot = parts[2];
+            const instanceKey = parts[3];
+
+            // Re-fetch config to verify
+            const instance = config.instances[instanceKey];
+            if (!instance) return;
+
+            // Authorization Check
+            if (interaction.user.id !== instance.backupUserId) {
+                return interaction.reply({ content: '⛔ You are not authorized to log for this medication report.', ephemeral: true });
+            }
+
+            const day = data.getCurrentDayName(instance.timezone);
+
+            // Show Modal
+            const modal = new ModalBuilder()
+                .setCustomId(`log_modal:${slot}:${instanceKey}:${day}`)
+                .setTitle(`Log ${day} ${slot}`);
+
+            const moodInput = new TextInputBuilder()
+                .setCustomId('mood')
+                .setLabel('How did you feel? ❤️')
+                .setPlaceholder('Enter your mood or notes (optional)')
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(false);
+
+            modal.addComponents(new ActionRowBuilder().addComponents(moodInput));
+
+            await interaction.showModal(modal);
+        } else if (customId.startsWith('remind_again_')) {
+            const parts = customId.split('_');
+            const slot = parts[2];
+            const instanceKey = parts[3];
+
+            const instance = config.instances[instanceKey];
+            if (!instance) return;
+
+            if (interaction.user.id !== instance.backupUserId) {
+                return interaction.reply({ content: '⛔ You are not authorized.', ephemeral: true });
+            }
+
+            await interaction.reply({ content: `Got it! I will remind you again about your ${slot} pill in 30 minutes. ⏰`, ephemeral: true });
+
+            setTimeout(async () => {
+                try {
+                    const channel = await client.channels.fetch(interaction.channelId);
+                    if (!channel) return;
+
+                    let reminderMsg = `Hey! Don't forget to take your ${slot} pill! 💊`;
+                    if (instance.reminders && instance.reminders[slot]) {
+                        reminderMsg = instance.reminders[slot].message;
+                    } else if (instance.reminder && slot === 'PM') {
+                        reminderMsg = instance.reminder.message;
+                    } else if (instance.backupUserId) {
+                        reminderMsg = `Hey, <@${instance.backupUserId}>! Don't forget to take your ${slot} pill and log it! 💊`;
+                    }
+
+                    const row = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`remind_again_${slot}_${instanceKey}`)
+                            .setLabel('Remind me again')
+                            .setStyle(ButtonStyle.Primary)
+                            .setEmoji('⏰')
+                    );
+
+                    const msg = await channel.send({ content: `**Reminder!**\n${reminderMsg}`, components: [row] });
+                    data.setReminderMessageId(instanceKey, channel.id, msg.id);
+                } catch (e) {
+                    console.error('Failed to send deferred reminder:', e);
+                }
+            }, 30 * 60 * 1000);
+        }
+    }
+
+    // 3. Handle Modal Submissions
+    if (interaction.isModalSubmit()) {
+        const customId = interaction.customId;
+
+        if (customId.startsWith('log_modal:')) {
+            const parts = customId.split(':');
+            const slot = parts[1];
+            const instanceKey = parts[2];
+            const day = parts[3];
+
+            const mood = interaction.fields.getTextInputValue('mood') || 'Logged';
+
+            const instance = config.instances[instanceKey];
+            if (!instance) return;
+
+            // Log Checkmark AND Mood
+            data.updateWeeklyCheck(instanceKey, instance.timezone, day, slot, true);
+            data.logMood(instanceKey, instance.timezone, day, slot, mood);
+
+            // Sync Messages
+            await ensurePersistentMessage(client);
+
+            // Cleanup: delete other messages in the channel to keep it clean
+            try {
+                const channel = interaction.channel;
+                if (channel) {
+                    const savedIds = data.getMessageIds(instanceKey);
+                    const persistentMessageId = savedIds[channel.id];
+
+                    if (persistentMessageId) { // Only cleanup in designated medication channels
+                        const messages = await channel.messages.fetch({ limit: 50 });
+                        for (const [msgId, msg] of messages) {
+                            if (msgId !== persistentMessageId) {
+                                await msg.delete().catch(() => { });
+                            }
+                        }
+                        console.log(`Cleaned up extra messages in ${channel.id} after log.`);
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to cleanup messages after modal:", e);
+            }
+
+            // Reply Success
+            const encouragements = [
+                "Proud of you! 💖", "Keep it up! ✨", "You're doing great! 🌸", "Sending you hugs! 🫂",
+                "Good job taking care of yourself! 🌿", "You got this! 💫", "Stay awesome! 🍄", "Yay! All done! 🎉"
+            ];
+            const randomMsg = encouragements[Math.floor(Math.random() * encouragements.length)];
+
+            await interaction.reply({ content: `✅ Logged for **${day} ${slot}**!\n"${mood}"\n\n${randomMsg}`, ephemeral: true });
         }
     }
 };

@@ -28,8 +28,12 @@ module.exports = async (reaction, user, client) => {
     let timeSlot = null;
     if (reaction.emoji.name === '🌞' && slots.includes('AM')) {
         timeSlot = 'AM';
-    } else if ((reaction.emoji.name === '💤' || reaction.emoji.name === 'zzz') && slots.includes('PM')) {
+    } else if (reaction.emoji.name === '🌆' && slots.includes('PM')) {
         timeSlot = 'PM';
+    } else if ((reaction.emoji.name === '💤' || reaction.emoji.name === 'zzz') && slots.includes('Sleep')) {
+        timeSlot = 'Sleep';
+    } else if ((reaction.emoji.name === '💤' || reaction.emoji.name === 'zzz') && slots.includes('PM') && !slots.includes('Sleep')) {
+        timeSlot = 'PM'; // Legacy fallback for Casey
     } else {
         return;
     }

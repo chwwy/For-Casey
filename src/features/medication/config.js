@@ -4,12 +4,27 @@ module.exports = {
             name: "Nao's Medication Report",
             channels: ['1472313975386669218'],
             timezone: 'Asia/Jakarta',
+<<<<<<< HEAD
             slots: ['AM'],
+=======
+            slots: ['AM', 'PM', 'Sleep'],
+>>>>>>> 51810791e3ceeba01fa8b236b8435f14a84cb6c8
             backupUserId: '860909419226595328',
             reminders: {
                 'AM': {
                     time: '00 09 * * *',
                     message: "Hey, <@860909419226595328>! Don't forget to take your morning pill and log it ❣️"
+<<<<<<< HEAD
+=======
+                },
+                'PM': {
+                    time: '00 18 * * *',
+                    message: "Hey, <@860909419226595328>! Don't forget to take your evening pill and log it ❣️"
+                },
+                'Sleep': {
+                    time: '00 21 * * *',
+                    message: "Hey, <@860909419226595328>! Don't forget to take your sleep pill and log it before going to sleep ❣️"
+>>>>>>> 51810791e3ceeba01fa8b236b8435f14a84cb6c8
                 }
             }
         },
@@ -17,11 +32,13 @@ module.exports = {
             name: "Casey's Medication Report",
             channels: ['1472444626978869411'],
             timezone: 'America/Chicago',
-            slots: ['PM'],
+            slots: ['AM'],
             backupUserId: '287489239250370560',
-            reminder: {
-                time: '55 19 * * *',
-                message: "Hey, <@287489239250370560>! Don't forget to take your pill and log it ❣️"
+            reminders: {
+                'AM': {
+                    time: '00 07 * * *',
+                    message: "Hey, <@287489239250370560>! Don't forget to take your pill and log it ❣️"
+                }
             }
         }
     },

@@ -11,10 +11,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
+    "default-gateway": "^6.0.3",
     "discord.js": "^14.14.0",
     "dotenv": "^16.4.5",
     "genius-lyrics": "^4.4.7",
-    "node-cron": "^4.2.1"
+    "google-translate-api-x": "^10.7.2",
+    "node-cron": "^4.2.1",
+    "undici": "^5.28.4"
   }
 }

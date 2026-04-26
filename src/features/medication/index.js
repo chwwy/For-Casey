@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const cron = require('node-cron');
 const data = require('./data');
 const config = require('./config');
@@ -108,17 +108,54 @@ async function ensurePersistentMessage(client) {
             }
 
             const embeds = generateReportEmbeds(key);
+            const components = [];
+
+            // Add Logging Buttons
+            const row = new ActionRowBuilder();
+            const isSingleSlot = instanceConfig.slots.length === 1;
+            for (const slot of instanceConfig.slots) {
+                let label, emoji;
+                if (isSingleSlot) {
+                    label = 'Log Medication';
+                    emoji = '💊';
+                } else if (slot === 'AM') {
+                    label = 'Log Morning (AM)';
+                    emoji = '🌞';
+                } else if (slot === 'PM') {
+                    label = 'Log Evening (PM)';
+                    emoji = '🌆';
+                } else if (slot === 'Sleep') {
+                    label = 'Log Sleep';
+                    emoji = '💤';
+                } else {
+                    label = `Log ${slot}`;
+                    emoji = '💊';
+                }
+
+                row.addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`log_btn_${slot}_${key}`)
+                        .setLabel(label)
+                        .setEmoji(emoji)
+                        .setStyle(ButtonStyle.Secondary)
+                );
+            }
+
+            if (row.components.length > 0) {
+                components.push(row);
+            }
 
             if (message) {
-                await message.edit({ embeds: embeds });
+                await message.edit({ embeds: embeds, components: components });
             } else {
-                message = await channel.send({ embeds: embeds });
+                message = await channel.send({ embeds: embeds, components: components });
                 data.setMessageId(key, channelId, message.id);
             }
 
 
-            // Always ensure reactions exist based on slots
+            // cleanup reactions if any
             try {
+<<<<<<< HEAD
                 // Cleanup unwanted reactions (Legacy)
                 const unwanted = ['📓', '🛏️'];
                 for (const emoji of unwanted) {
@@ -139,9 +176,13 @@ async function ensurePersistentMessage(client) {
                 }
                 if (instanceConfig.slots.includes('PM')) {
                     await message.react('💤');
+=======
+                if (message.reactions.cache.size > 0) {
+                    await message.reactions.removeAll();
+>>>>>>> 51810791e3ceeba01fa8b236b8435f14a84cb6c8
                 }
             } catch (error) {
-                console.error('Failed to react to message:', error);
+                console.error('Failed to clear reactions:', error);
             }
         }
     }
@@ -213,6 +254,7 @@ async function resetAndClear(client, force = false) {
                 const channel = await client.channels.fetch(channelId);
                 const message = await channel.messages.fetch(messageId);
                 if (message) {
+<<<<<<< HEAD
                     // Re-react and update
                     await message.reactions.removeAll();
                     if (instanceConfig.slots.includes('AM')) {
@@ -228,6 +270,10 @@ async function resetAndClear(client, force = false) {
 
                     const embeds = generateReportEmbeds(key);
                     await message.edit({ embeds: embeds });
+=======
+                    // Just refresh the entire message (Embeds + Buttons)
+                    await ensurePersistentMessage(client);
+>>>>>>> 51810791e3ceeba01fa8b236b8435f14a84cb6c8
 
 
                 }
@@ -264,7 +310,14 @@ function initScheduler(client) {
                     for (const channelId of instanceConfig.channels) {
                         try {
                             const channel = await client.channels.fetch(channelId);
-                            const msg = await channel.send(reminderInfo.message);
+                            const row = new ActionRowBuilder().addComponents(
+                                new ButtonBuilder()
+                                    .setCustomId(`remind_again_${slot}_${key}`)
+                                    .setLabel('Remind me again')
+                                    .setStyle(ButtonStyle.Primary)
+                                    .setEmoji('⏰')
+                            );
+                            const msg = await channel.send({ content: reminderInfo.message, components: [row] });
                             data.setReminderMessageId(key, channelId, msg.id);
                         } catch (e) {
                             console.error(`Failed to send reminder to ${channelId}:`, e);
@@ -281,7 +334,14 @@ function initScheduler(client) {
                 for (const channelId of instanceConfig.channels) {
                     try {
                         const channel = await client.channels.fetch(channelId);
-                        const msg = await channel.send(instanceConfig.reminder.message);
+                        const row = new ActionRowBuilder().addComponents(
+                            new ButtonBuilder()
+                                .setCustomId(`remind_again_PM_${key}`)
+                                .setLabel('Remind me again')
+                                .setStyle(ButtonStyle.Primary)
+                                .setEmoji('⏰')
+                        );
+                        const msg = await channel.send({ content: instanceConfig.reminder.message, components: [row] });
                         data.setReminderMessageId(key, channelId, msg.id);
                     } catch (e) {
                         console.error(`Failed to send reminder to ${channelId}:`, e);
@@ -291,12 +351,13 @@ function initScheduler(client) {
         }
     }
 
-    // Daily Midnight Cleanup (Reset Buttons for new day)
+    // Daily 04:00 AM Cleanup (Reset Buttons for new day)
     for (const [key, instanceConfig] of Object.entries(config.instances)) {
-        console.log(`Scheduling daily reaction cleanup for ${key} at 00:00 (${instanceConfig.timezone})`);
+        console.log(`Scheduling daily reaction cleanup for ${key} at 04:00 (${instanceConfig.timezone})`);
 
-        cron.schedule('0 0 * * *', async () => {
+        cron.schedule('0 4 * * *', async () => {
             console.log(`Running midnight cleanup for ${key}...`);
+<<<<<<< HEAD
             // Clear reactions to reset the "buttons" for the new day
             // We use removeAll() to avoid triggering individual remove events that might mess with data
             const savedIds = data.getMessageIds(key);
@@ -327,6 +388,9 @@ function initScheduler(client) {
                     }
                 }
             }
+=======
+            await ensurePersistentMessage(client);
+>>>>>>> 51810791e3ceeba01fa8b236b8435f14a84cb6c8
         }, {
             timezone: instanceConfig.timezone
         });
@@ -358,10 +422,12 @@ module.exports = {
             message.reply('Weekly data reset manually (Backups sent).');
         } else if (command === 'remind') {
             const channelId = message.channel.id;
-            const targetSlot = args[2]?.toUpperCase();
+            const inputSlot = args[2]?.toLowerCase();
+            const slotMap = { 'am': 'AM', 'pm': 'PM', 'sleep': 'Sleep' };
+            const targetSlot = slotMap[inputSlot];
 
-            if (!targetSlot || !['AM', 'PM'].includes(targetSlot)) {
-                return message.reply("Please specify a slot: `!pill remind am` or `!pill remind pm`");
+            if (!targetSlot) {
+                return message.reply("Please specify a slot: `!pill remind am`, `!pill remind pm`, or `!pill remind sleep`");
             }
 
             let triggered = false;
@@ -380,7 +446,14 @@ module.exports = {
                             reminderMsg = `Hey, <@${instanceConfig.backupUserId}>! Don't forget to take your ${targetSlot} pill and log it! 💊`;
                         }
 
-                        const msg = await message.channel.send(reminderMsg);
+                        const row = new ActionRowBuilder().addComponents(
+                            new ButtonBuilder()
+                                .setCustomId(`remind_again_${targetSlot}_${key}`)
+                                .setLabel('Remind me again')
+                                .setStyle(ButtonStyle.Primary)
+                                .setEmoji('⏰')
+                        );
+                        const msg = await message.channel.send({ content: reminderMsg, components: [row] });
                         data.setReminderMessageId(key, channelId, msg.id);
                         triggered = true;
                         console.log(`Manually triggered ${targetSlot} reminder for ${key} in ${channelId}`);

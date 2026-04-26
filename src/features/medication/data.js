@@ -8,9 +8,16 @@ function getNow(timezone) {
     return new Date(new Date().toLocaleString('en-US', { timeZone: timezone || 'UTC' }));
 }
 
+// Helper: Get Logical Date in Specific Timezone (shifts time back by 4 hours so day ends at 4 AM)
+function getLogicalDate(timezone) {
+    const d = getNow(timezone);
+    d.setHours(d.getHours() - 4);
+    return d;
+}
+
 // Helper: Get Start of Week (Monday) in Specific Timezone
 function getWeekStart(timezone) {
-    const d = getNow(timezone);
+    const d = getLogicalDate(timezone);
     const day = d.getDay(); // 0 (Sun) - 6 (Sat)
 
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
@@ -26,7 +33,7 @@ function getWeekStart(timezone) {
 
 // Helper: Get Day Name in Specific Timezone
 function getCurrentDayName(timezone) {
-    return getNow(timezone).toLocaleDateString('en-US', { weekday: 'long' });
+    return getLogicalDate(timezone).toLocaleDateString('en-US', { weekday: 'long' });
 }
 
 function loadData() {
@@ -93,11 +100,11 @@ function updateWeeklyCheck(instanceKey, timezone, dayName, timeSlot, value = tru
     checkWeekReset(instance, timezone);
 
     if (!instance.days[dayName]) {
-        instance.days[dayName] = { AM: false, PM: false };
+        instance.days[dayName] = { AM: false, PM: false, Sleep: false };
     }
 
     if (!instance.days[dayName].mood) {
-        instance.days[dayName].mood = { AM: "", PM: "" };
+        instance.days[dayName].mood = { AM: "", PM: "", Sleep: "" };
     }
 
     let storedValue = value;
@@ -119,11 +126,11 @@ function logMood(instanceKey, timezone, dayName, timeSlot, content) {
     checkWeekReset(instance, timezone);
 
     if (!instance.days[dayName]) {
-        instance.days[dayName] = { AM: false, PM: false };
+        instance.days[dayName] = { AM: false, PM: false, Sleep: false };
     }
 
     if (!instance.days[dayName].mood) {
-        instance.days[dayName].mood = { AM: "", PM: "" };
+        instance.days[dayName].mood = { AM: "", PM: "", Sleep: "" };
     }
 
     instance.days[dayName].mood[timeSlot] = content;

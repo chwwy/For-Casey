@@ -27,7 +27,7 @@ module.exports = async (reaction, user, client) => {
     // 3. Determine Time Slot or Action based on reaction
     let timeSlot = null;
 
-    if (reaction.emoji.name === '🌞' && slots.includes('AM')) {
+    if ((reaction.emoji.name === '🌞' || reaction.emoji.name === '✅') && slots.includes('AM')) {
         timeSlot = 'AM';
     } else if ((reaction.emoji.name === '💤' || reaction.emoji.name === 'zzz') && slots.includes('PM')) {
         timeSlot = 'PM';
@@ -76,12 +76,13 @@ module.exports = async (reaction, user, client) => {
         console.error("Failed to delete reminder:", e);
     }
 
-    // 5. Trigger Mood Prompt via DM
-    try {
-        const dmChannel = await user.createDM();
-        // Customize prompt based on type? Or generic as requested?
-        // "How are you feeling right now? (Reply here to log) :ribbon:"
-        await dmChannel.send(`**${instance.name} (${timeSlot})**\nHow are you feeling right now? (Reply here to log) 🎀`);
+    // 5. Trigger Mood Prompt via DM (Skip for Nao)
+    if (instanceKey !== 'nao') {
+        try {
+            const dmChannel = await user.createDM();
+            // Customize prompt based on type? Or generic as requested?
+            // "How are you feeling right now? (Reply here to log) :ribbon:"
+            await dmChannel.send(`**${instance.name} (${timeSlot})**\nHow are you feeling right now? (Reply here to log) 🎀`);
 
         const filter = m => m.author.id === user.id;
         const collector = dmChannel.createMessageCollector({ filter, max: 1, time: 300000 }); // 5 min
@@ -127,5 +128,6 @@ module.exports = async (reaction, user, client) => {
 
     } catch (e) {
         console.error("Failed to send DM for mood prompt:", e);
+    }
     }
 };

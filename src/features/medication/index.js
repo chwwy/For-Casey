@@ -52,12 +52,15 @@ function generateReportEmbeds(instanceKey) {
     const reportEmbed = new EmbedBuilder()
         .setTitle(`${instanceConfig.name} 💊`)
         .setThumbnail("https://yt3.ggpht.com/kShOeDVt42lWaVio1oEUV60wr9HTuIvw_IOsw66vdNQ112xvZrCwzQUVHyZJllpslIhUeqsnLw=s176-c-k-c0x00ffffff-no-rj-mo")
-        .setDescription("Did you take your pills?")
         .setColor(16765404)
         .addFields(
             { name: "**Start of Week**", value: part1Value, inline: true },
             { name: "**End of Week**", value: part2Value, inline: true }
         );
+
+    if (instanceKey !== 'nao') {
+        reportEmbed.setDescription("Did you take your pills?");
+    }
 
     // Second Embed: Mood Tracker
     const moodEmbed = new EmbedBuilder()
@@ -78,6 +81,10 @@ function generateReportEmbeds(instanceKey) {
                 inline: false
             };
         }));
+
+    if (instanceKey === 'nao') {
+        return [reportEmbed];
+    }
 
     return [reportEmbed, moodEmbed];
 }
@@ -124,7 +131,11 @@ async function ensurePersistentMessage(client) {
                 }
 
                 if (instanceConfig.slots.includes('AM')) {
-                    await message.react('🌞');
+                    if (key === 'nao') {
+                        await message.react('✅');
+                    } else {
+                        await message.react('🌞');
+                    }
                 }
                 if (instanceConfig.slots.includes('PM')) {
                     await message.react('💤');
@@ -205,7 +216,11 @@ async function resetAndClear(client, force = false) {
                     // Re-react and update
                     await message.reactions.removeAll();
                     if (instanceConfig.slots.includes('AM')) {
-                        await message.react('🌞');
+                        if (key === 'nao') {
+                            await message.react('✅');
+                        } else {
+                            await message.react('🌞');
+                        }
                     }
                     if (instanceConfig.slots.includes('PM')) {
                         await message.react('💤');
@@ -293,7 +308,11 @@ function initScheduler(client) {
                         await message.reactions.removeAll();
                         // Re-add buttons
                         if (instanceConfig.slots.includes('AM')) {
-                            await message.react('🌞');
+                            if (key === 'nao') {
+                                await message.react('✅');
+                            } else {
+                                await message.react('🌞');
+                            }
                         }
                         if (instanceConfig.slots.includes('PM')) {
                             await message.react('💤');

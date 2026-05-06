@@ -82,7 +82,7 @@ function generateReportEmbeds(instanceKey) {
             };
         }));
 
-    if (instanceKey === 'nao') {
+    if (instanceKey === 'nao' || instanceKey === 'nightly') {
         return [reportEmbed];
     }
 
@@ -117,7 +117,7 @@ async function ensurePersistentMessage(client) {
                 let label, emoji;
                 if (isSingleSlot) {
                     label = 'Log Medication';
-                    emoji = key === 'nao' ? '✅' : '💊';
+                    emoji = (key === 'nao' || key === 'nightly') ? '✅' : '💊';
                 } else if (slot === 'AM') {
                     label = 'Log Morning (AM)';
                     emoji = '🌞';

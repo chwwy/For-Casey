@@ -117,7 +117,7 @@ module.exports = async (interaction, client) => {
 
             const day = data.getCurrentDayName(instance.timezone);
 
-            if (instanceKey === 'nao') {
+            if (instanceKey === 'nao' || instanceKey === 'nightly') {
                 data.updateWeeklyCheck(instanceKey, instance.timezone, day, slot, true);
                 await ensurePersistentMessage(client);
 

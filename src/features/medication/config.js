@@ -2,28 +2,20 @@ module.exports = {
     instances: {
         'nao': {
             name: "Nao's Medication Report",
-            channels: ['1472313975386669218'],
+            channels: ['1505874859962400789'],
             timezone: 'Asia/Jakarta',
-            slots: ['AM', 'PM', 'Sleep'],
+            slots: ['AM', 'PM'],
             backupUserId: '860909419226595328',
             reminders: {
                 'AM': {
                     time: '00 09 * * *',
-                    message: "Hey, <@860909419226595328>! Don't forget to take your morning pill and log it ❣️"
-                },
-                'PM': {
-                    time: '00 18 * * *',
-                    message: "Hey, <@860909419226595328>! Don't forget to take your evening pill and log it ❣️"
-                },
-                'Sleep': {
-                    time: '00 21 * * *',
-                    message: "Hey, <@860909419226595328>! Don't forget to take your sleep pill and log it before going to sleep ❣️"
+                    message: "Hey, <@860909419226595328>! Don't forget to take your pill and log it ❣️"
                 }
             }
         },
         'nightly': {
             name: "Casey's Medication Report",
-            channels: ['1472444626978869411'],
+            channels: ['1505874841767776296'],
             timezone: 'America/Chicago',
             slots: ['AM'],
             backupUserId: '287489239250370560',

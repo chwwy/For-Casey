@@ -10,6 +10,10 @@ module.exports = {
                 'AM': {
                     time: '00 09 * * *',
                     message: "Hey, <@860909419226595328>! Don't forget to take your pill and log it ❣️"
+                },
+                'PM': {
+                    time: '00 20 * * *',
+                    message: "Hey, <@860909419226595328>! Don't forget to take your pill and log it ❣️"
                 }
             }
         },

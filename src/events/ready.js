@@ -25,4 +25,5 @@ module.exports = async (client) => {
 
     // Initialize Schedulers
     initScheduler(client);
+    require('../features/curhat').initInactivityScheduler(client);
 };

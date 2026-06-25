@@ -2,10 +2,12 @@ const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Button
 const data = require('../features/medication/data');
 const config = require('../features/medication/config');
 const { ensurePersistentMessage } = require('../features/medication/index');
+const curhatFeature = require('../features/curhat');
 
 module.exports = async (interaction, client) => {
-    // 1. Handle Slash Commands
-    if (interaction.isChatInputCommand()) {
+    try {
+        // 1. Handle Slash Commands
+        if (interaction.isChatInputCommand()) {
         if (interaction.commandName === 'log') {
             const day = interaction.options.getString('day');
             let slot = interaction.options.getString('slot');
@@ -93,6 +95,8 @@ module.exports = async (interaction, client) => {
                 console.error(`Failed to create reminder:`, e);
                 return interaction.reply({ content: `Failed to create reminder.`, ephemeral: true });
             }
+        } else if (interaction.commandName === 'curhat') {
+            return curhatFeature.handleCurhatCommand(interaction);
         }
     }
 
@@ -100,7 +104,11 @@ module.exports = async (interaction, client) => {
     if (interaction.isButton()) {
         const customId = interaction.customId;
 
-        if (customId.startsWith('note_btn_')) {
+        if (customId.startsWith('curhat_access_')) {
+            return curhatFeature.handleCurhatButton(interaction);
+        } else if (customId.startsWith('curhat_destroy_')) {
+            return curhatFeature.handleDestroyButton(interaction);
+        } else if (customId.startsWith('note_btn_')) {
             // note_btn_[slot]_[key]
             const parts = customId.split('_');
             let slot = parts[2];
@@ -285,5 +293,8 @@ module.exports = async (interaction, client) => {
 
             await interaction.reply({ content: `✅ Logged for **${day} ${slot}**!\n"${mood}"\n\n${randomMsg}`, ephemeral: true });
         }
+    }
+    } catch (error) {
+        console.error('Unhandled error in interactionCreate:', error);
     }
 };

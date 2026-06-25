@@ -1,8 +1,12 @@
 const translatorFeature = require('../features/translator');
 const medicationFeature = require('../features/medication');
 const lyricsFeature = require('../features/lyrics');
+const curhatFeature = require('../features/curhat');
 
 module.exports = async (message, client) => {
+    // Curhat Autodeletion (Handle all messages in curhat channels including bots)
+    curhatFeature.handleMessage(message);
+
     // 1. Ignore ALL bots to prevent loops and massive API usage from other bots
     if (message.author.bot) return;
 

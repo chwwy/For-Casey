@@ -39,7 +39,16 @@ const commands = [
                     { name: 'AM', value: 'AM' },
                     { name: 'PM', value: 'PM' },
                     { name: 'Sleep', value: 'Sleep' }
-                ))
+                )),
+    new SlashCommandBuilder()
+        .setName('curhat')
+        .setDescription('Create a private channel where messages are autodeleted.')
+        .addIntegerOption(option =>
+            option.setName('seconds')
+                .setDescription('The number of seconds before messages are autodeleted.')
+                .setRequired(true)
+                .setMinValue(1)
+        )
 ]
     .map(command => command.toJSON());
 

@@ -1,11 +1,8 @@
 const translatorFeature = require('../features/translator');
 const medicationFeature = require('../features/medication');
 const lyricsFeature = require('../features/lyrics');
-<<<<<<< HEAD
 const autoBanFeature = require('../features/autoBan');
-=======
 const curhatFeature = require('../features/curhat');
->>>>>>> 1d72474362d994fc8ab7794ca2064fc4b6593cb5
 
 module.exports = async (message, client) => {
     // Curhat Autodeletion (Handle all messages in curhat channels including bots)

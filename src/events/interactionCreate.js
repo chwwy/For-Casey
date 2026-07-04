@@ -95,7 +95,6 @@ module.exports = async (interaction, client) => {
                 console.error(`Failed to create reminder:`, e);
                 return interaction.reply({ content: `Failed to create reminder.`, ephemeral: true });
             }
-<<<<<<< HEAD
         } else if (interaction.commandName === 'banchannel') {
             if (!interaction.member.permissions.has('Administrator')) {
                 return interaction.reply({ content: '⛔ You must be an Administrator to run this command.', ephemeral: true });
@@ -128,10 +127,6 @@ module.exports = async (interaction, client) => {
                 const list = channels.map(id => `- <#${id}> (${id})`).join('\n');
                 return interaction.reply({ content: `**Configured Auto-Ban Channels:**\n${list}`, ephemeral: true });
             }
-=======
-        } else if (interaction.commandName === 'curhat') {
-            return curhatFeature.handleCurhatCommand(interaction);
->>>>>>> 1d72474362d994fc8ab7794ca2064fc4b6593cb5
         }
     }
 

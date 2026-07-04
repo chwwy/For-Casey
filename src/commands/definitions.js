@@ -41,7 +41,6 @@ const commands = [
                     { name: 'Sleep', value: 'Sleep' }
                 )),
     new SlashCommandBuilder()
-<<<<<<< HEAD
         .setName('banchannel')
         .setDescription('Configure auto-ban channels.')
         .addSubcommand(subcommand =>
@@ -68,7 +67,8 @@ const commands = [
             subcommand
                 .setName('list')
                 .setDescription('List all configured auto-ban channels.')
-=======
+        ),
+    new SlashCommandBuilder()
         .setName('curhat')
         .setDescription('Create a private channel where messages are autodeleted.')
         .addIntegerOption(option =>
@@ -76,7 +76,6 @@ const commands = [
                 .setDescription('The number of seconds before messages are autodeleted.')
                 .setRequired(true)
                 .setMinValue(1)
->>>>>>> 1d72474362d994fc8ab7794ca2064fc4b6593cb5
         )
 ]
     .map(command => command.toJSON());

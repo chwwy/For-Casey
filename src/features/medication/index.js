@@ -12,23 +12,25 @@ function generateReportEmbeds(instanceKey) {
     const instanceData = data.getInstanceData(instanceKey, instanceConfig.timezone);
     const days = instanceData.days || {};
 
-    let totalCount = 0;
+    let amCount = 0;
+    let pmCount = 0;
     const slots = instanceConfig.slots; // ['AM', 'PM'] or ['PM']
 
     // Helper to format a day's status
     const formatDay = (day) => {
         const d = days[day] || {};
+        const moodMap = d.mood || {};
 
         let statusLines = [];
         for (const slot of slots) {
-            // Checkmark logic
             let checked = '';
             if (d[slot]) {
-                totalCount++;
-                if (typeof d[slot] === 'string' && d[slot].length > 0) {
-                    checked = `✅ ${d[slot]}`; // e.g. "✅ 09:15 PM"
-                } else {
-                    checked = '✅';
+                if (slot === 'AM') amCount++;
+                if (slot === 'PM') pmCount++;
+                checked = '✅';
+                const note = moodMap[slot];
+                if (note && note.trim() !== '' && note !== 'Logged') {
+                    checked += ` - *${note}*`;
                 }
             }
 
@@ -37,27 +39,37 @@ function generateReportEmbeds(instanceKey) {
         return `**${day}**\n${statusLines.join('\n')}\n`;
     };
 
-    // Calculate total needed
-    // 7 days * number of slots
-    const totalPossible = 7 * slots.length;
-
     // Field 1: Monday - Thursday
     const part1Days = DAY_NAMES.slice(0, 4);
     const part1Value = part1Days.map(formatDay).join('\n');
 
     // Field 2: Friday - Sunday
     const part2Days = DAY_NAMES.slice(4);
-    const part2Value = part2Days.map(formatDay).join('\n') + `\n**Weekly Progress:**\n${totalCount}/${totalPossible}`;
+    
+    let progressLines = [];
+    if (slots.includes('AM')) {
+        progressLines.push(`☀️: ${amCount}/7`);
+    }
+    if (slots.includes('PM')) {
+        progressLines.push(`💤: ${pmCount}/7`);
+    }
+
+    const part2Value = part2Days.map(formatDay).join('\n') + `\n**Weekly Progress:**\n${progressLines.join('\n')}`;
 
     const reportEmbed = new EmbedBuilder()
         .setTitle(`${instanceConfig.name} 💊`)
+<<<<<<< HEAD
         .setThumbnail("https://yt3.ggpht.com/kShOeDVt42lWaVio1oEUV60wr9HTuIvw_IOsw66vdNQ112xvZrCwzQUVHyZJllpslIhUeqsnLw=s176-c-k-c0x00ffffff-no-rj-mo")
+=======
+        .setDescription("Did you take your pills?")
+>>>>>>> 1d72474362d994fc8ab7794ca2064fc4b6593cb5
         .setColor(16765404)
         .addFields(
             { name: "**Start of Week**", value: part1Value, inline: true },
             { name: "**End of Week**", value: part2Value, inline: true }
         );
 
+<<<<<<< HEAD
     if (instanceKey !== 'nao') {
         reportEmbed.setDescription("Did you take your pills?");
     }
@@ -87,6 +99,9 @@ function generateReportEmbeds(instanceKey) {
     }
 
     return [reportEmbed, moodEmbed];
+=======
+    return [reportEmbed];
+>>>>>>> 1d72474362d994fc8ab7794ca2064fc4b6593cb5
 }
 
 async function ensurePersistentMessage(client) {
@@ -111,6 +126,7 @@ async function ensurePersistentMessage(client) {
             const components = [];
 
             // Add Logging Buttons
+<<<<<<< HEAD
             const row = new ActionRowBuilder();
             const isSingleSlot = instanceConfig.slots.length === 1;
             for (const slot of instanceConfig.slots) {
@@ -132,17 +148,44 @@ async function ensurePersistentMessage(client) {
                     emoji = '💊';
                 }
 
+=======
+            if (key === 'nao') {
+                const row = new ActionRowBuilder();
+>>>>>>> 1d72474362d994fc8ab7794ca2064fc4b6593cb5
                 row.addComponents(
                     new ButtonBuilder()
-                        .setCustomId(`log_btn_${slot}_${key}`)
-                        .setLabel(label)
-                        .setEmoji(emoji)
+                        .setCustomId(`mark_btn_AUTO_${key}`)
+                        .setLabel('Mark Done')
+                        .setEmoji('✅')
+                        .setStyle(ButtonStyle.Success),
+                    new ButtonBuilder()
+                        .setCustomId(`note_btn_AUTO_${key}`)
+                        .setLabel('Add Optional Note')
+                        .setEmoji('📝')
                         .setStyle(ButtonStyle.Secondary)
                 );
-            }
-
-            if (row.components.length > 0) {
                 components.push(row);
+            } else {
+                for (const slot of instanceConfig.slots) {
+                    const row = new ActionRowBuilder();
+                    let label = `Mark ${slot} Done`;
+                    if (slot === 'AM') label = 'Mark AM Done';
+                    if (slot === 'PM') label = 'Mark PM Done';
+
+                    row.addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`mark_btn_${slot}_${key}`)
+                            .setLabel(label)
+                            .setEmoji('✅')
+                            .setStyle(ButtonStyle.Success),
+                        new ButtonBuilder()
+                            .setCustomId(`note_btn_${slot}_${key}`)
+                            .setLabel('Add Optional Note')
+                            .setEmoji('📝')
+                            .setStyle(ButtonStyle.Secondary)
+                    );
+                    components.push(row);
+                }
             }
 
             if (message) {

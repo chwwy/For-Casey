@@ -2,10 +2,12 @@ const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Button
 const data = require('../features/medication/data');
 const config = require('../features/medication/config');
 const { ensurePersistentMessage } = require('../features/medication/index');
+const curhatFeature = require('../features/curhat');
 
 module.exports = async (interaction, client) => {
-    // 1. Handle Slash Commands
-    if (interaction.isChatInputCommand()) {
+    try {
+        // 1. Handle Slash Commands
+        if (interaction.isChatInputCommand()) {
         if (interaction.commandName === 'log') {
             const day = interaction.options.getString('day');
             let slot = interaction.options.getString('slot');
@@ -93,6 +95,7 @@ module.exports = async (interaction, client) => {
                 console.error(`Failed to create reminder:`, e);
                 return interaction.reply({ content: `Failed to create reminder.`, ephemeral: true });
             }
+<<<<<<< HEAD
         } else if (interaction.commandName === 'banchannel') {
             if (!interaction.member.permissions.has('Administrator')) {
                 return interaction.reply({ content: '⛔ You must be an Administrator to run this command.', ephemeral: true });
@@ -125,6 +128,10 @@ module.exports = async (interaction, client) => {
                 const list = channels.map(id => `- <#${id}> (${id})`).join('\n');
                 return interaction.reply({ content: `**Configured Auto-Ban Channels:**\n${list}`, ephemeral: true });
             }
+=======
+        } else if (interaction.commandName === 'curhat') {
+            return curhatFeature.handleCurhatCommand(interaction);
+>>>>>>> 1d72474362d994fc8ab7794ca2064fc4b6593cb5
         }
     }
 
@@ -132,10 +139,14 @@ module.exports = async (interaction, client) => {
     if (interaction.isButton()) {
         const customId = interaction.customId;
 
-        if (customId.startsWith('log_btn_')) {
-            // log_btn_[slot]_[key]
+        if (customId.startsWith('curhat_access_')) {
+            return curhatFeature.handleCurhatButton(interaction);
+        } else if (customId.startsWith('curhat_destroy_')) {
+            return curhatFeature.handleDestroyButton(interaction);
+        } else if (customId.startsWith('note_btn_')) {
+            // note_btn_[slot]_[key]
             const parts = customId.split('_');
-            const slot = parts[2];
+            let slot = parts[2];
             const instanceKey = parts[3];
 
             // Re-fetch config to verify
@@ -145,6 +156,11 @@ module.exports = async (interaction, client) => {
             // Authorization Check
             if (interaction.user.id !== instance.backupUserId) {
                 return interaction.reply({ content: '⛔ You are not authorized to log for this medication report.', ephemeral: true });
+            }
+
+            if (slot === 'AUTO') {
+                const hour = data.getNow(instance.timezone).getHours();
+                slot = (hour >= 6 && hour < 18) ? 'AM' : 'PM';
             }
 
             const day = data.getCurrentDayName(instance.timezone);
@@ -189,6 +205,57 @@ module.exports = async (interaction, client) => {
             modal.addComponents(new ActionRowBuilder().addComponents(moodInput));
 
             await interaction.showModal(modal);
+        } else if (customId.startsWith('mark_btn_')) {
+            const parts = customId.split('_');
+            let slot = parts[2];
+            const instanceKey = parts[3];
+
+            const instance = config.instances[instanceKey];
+            if (!instance) return;
+
+            if (interaction.user.id !== instance.backupUserId) {
+                return interaction.reply({ content: '⛔ You are not authorized to log for this medication report.', ephemeral: true });
+            }
+
+            if (slot === 'AUTO') {
+                const hour = data.getNow(instance.timezone).getHours();
+                slot = (hour >= 6 && hour < 18) ? 'AM' : 'PM';
+            }
+
+            const day = data.getCurrentDayName(instance.timezone);
+
+            // Just update the checklist and sync the message
+            data.updateWeeklyCheck(instanceKey, instance.timezone, day, slot, true);
+            await ensurePersistentMessage(client);
+
+            // Cleanup: delete other messages in the channel to keep it clean
+            try {
+                const channel = interaction.channel;
+                if (channel) {
+                    const savedIds = data.getMessageIds(instanceKey);
+                    const persistentMessageId = savedIds[channel.id];
+
+                    if (persistentMessageId) { 
+                        const messages = await channel.messages.fetch({ limit: 50 });
+                        for (const [msgId, msg] of messages) {
+                            if (msgId !== persistentMessageId) {
+                                await msg.delete().catch(() => { });
+                            }
+                        }
+                        console.log(`Cleaned up extra messages in ${channel.id} after log.`);
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to cleanup messages after mark:", e);
+            }
+
+            const encouragements = [
+                "Proud of you! 💖", "Keep it up! ✨", "You're doing great! 🌸", "Sending you hugs! 🫂",
+                "Good job taking care of yourself! 🌿", "You got this! 💫", "Stay awesome! 🍄", "Yay! All done! 🎉"
+            ];
+            const randomMsg = encouragements[Math.floor(Math.random() * encouragements.length)];
+
+            await interaction.reply({ content: `✅ Marked **${day} ${slot}** as done!\n\n${randomMsg}`, ephemeral: true });
         } else if (customId.startsWith('remind_again_')) {
             const parts = customId.split('_');
             const slot = parts[2];
@@ -286,5 +353,8 @@ module.exports = async (interaction, client) => {
 
             await interaction.reply({ content: `✅ Logged for **${day} ${slot}**!\n"${mood}"\n\n${randomMsg}`, ephemeral: true });
         }
+    }
+    } catch (error) {
+        console.error('Unhandled error in interactionCreate:', error);
     }
 };

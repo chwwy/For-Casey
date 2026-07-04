@@ -58,18 +58,13 @@ function generateReportEmbeds(instanceKey) {
 
     const reportEmbed = new EmbedBuilder()
         .setTitle(`${instanceConfig.name} 💊`)
-<<<<<<< HEAD
         .setThumbnail("https://yt3.ggpht.com/kShOeDVt42lWaVio1oEUV60wr9HTuIvw_IOsw66vdNQ112xvZrCwzQUVHyZJllpslIhUeqsnLw=s176-c-k-c0x00ffffff-no-rj-mo")
-=======
-        .setDescription("Did you take your pills?")
->>>>>>> 1d72474362d994fc8ab7794ca2064fc4b6593cb5
         .setColor(16765404)
         .addFields(
             { name: "**Start of Week**", value: part1Value, inline: true },
             { name: "**End of Week**", value: part2Value, inline: true }
         );
 
-<<<<<<< HEAD
     if (instanceKey !== 'nao') {
         reportEmbed.setDescription("Did you take your pills?");
     }
@@ -99,9 +94,6 @@ function generateReportEmbeds(instanceKey) {
     }
 
     return [reportEmbed, moodEmbed];
-=======
-    return [reportEmbed];
->>>>>>> 1d72474362d994fc8ab7794ca2064fc4b6593cb5
 }
 
 async function ensurePersistentMessage(client) {
@@ -126,32 +118,8 @@ async function ensurePersistentMessage(client) {
             const components = [];
 
             // Add Logging Buttons
-<<<<<<< HEAD
-            const row = new ActionRowBuilder();
-            const isSingleSlot = instanceConfig.slots.length === 1;
-            for (const slot of instanceConfig.slots) {
-                let label, emoji;
-                if (isSingleSlot) {
-                    label = 'Log Medication';
-                    emoji = (key === 'nao' || key === 'nightly') ? '✅' : '💊';
-                } else if (slot === 'AM') {
-                    label = 'Log Morning (AM)';
-                    emoji = '🌞';
-                } else if (slot === 'PM') {
-                    label = 'Log Evening (PM)';
-                    emoji = '🌆';
-                } else if (slot === 'Sleep') {
-                    label = 'Log Sleep';
-                    emoji = '💤';
-                } else {
-                    label = `Log ${slot}`;
-                    emoji = '💊';
-                }
-
-=======
             if (key === 'nao') {
                 const row = new ActionRowBuilder();
->>>>>>> 1d72474362d994fc8ab7794ca2064fc4b6593cb5
                 row.addComponents(
                     new ButtonBuilder()
                         .setCustomId(`mark_btn_AUTO_${key}`)

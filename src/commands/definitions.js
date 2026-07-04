@@ -39,7 +39,35 @@ const commands = [
                     { name: 'AM', value: 'AM' },
                     { name: 'PM', value: 'PM' },
                     { name: 'Sleep', value: 'Sleep' }
-                ))
+                )),
+    new SlashCommandBuilder()
+        .setName('banchannel')
+        .setDescription('Configure auto-ban channels.')
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('add')
+                .setDescription('Add a channel to the auto-ban list.')
+                .addChannelOption(option =>
+                    option.setName('channel')
+                        .setDescription('The channel to add')
+                        .setRequired(true)
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('remove')
+                .setDescription('Remove a channel from the auto-ban list.')
+                .addChannelOption(option =>
+                    option.setName('channel')
+                        .setDescription('The channel to remove')
+                        .setRequired(true)
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('list')
+                .setDescription('List all configured auto-ban channels.')
+        )
 ]
     .map(command => command.toJSON());
 

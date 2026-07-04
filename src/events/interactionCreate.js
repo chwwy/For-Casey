@@ -93,6 +93,38 @@ module.exports = async (interaction, client) => {
                 console.error(`Failed to create reminder:`, e);
                 return interaction.reply({ content: `Failed to create reminder.`, ephemeral: true });
             }
+        } else if (interaction.commandName === 'banchannel') {
+            if (!interaction.member.permissions.has('Administrator')) {
+                return interaction.reply({ content: '⛔ You must be an Administrator to run this command.', ephemeral: true });
+            }
+
+            const autoBanConfig = require('../features/autoBan/config');
+            const subcommand = interaction.options.getSubcommand();
+
+            if (subcommand === 'add') {
+                const channel = interaction.options.getChannel('channel');
+                const added = autoBanConfig.addBanChannel(channel.id);
+                if (added) {
+                    return interaction.reply({ content: `✅ Added <#${channel.id}> to the auto-ban list.`, ephemeral: true });
+                } else {
+                    return interaction.reply({ content: `ℹ️ <#${channel.id}> is already in the auto-ban list.`, ephemeral: true });
+                }
+            } else if (subcommand === 'remove') {
+                const channel = interaction.options.getChannel('channel');
+                const removed = autoBanConfig.removeBanChannel(channel.id);
+                if (removed) {
+                    return interaction.reply({ content: `✅ Removed <#${channel.id}> from the auto-ban list.`, ephemeral: true });
+                } else {
+                    return interaction.reply({ content: `ℹ️ <#${channel.id}> was not in the auto-ban list.`, ephemeral: true });
+                }
+            } else if (subcommand === 'list') {
+                const channels = autoBanConfig.getBanChannelIds();
+                if (channels.length === 0) {
+                    return interaction.reply({ content: 'ℹ️ There are no channels configured for auto-ban.', ephemeral: true });
+                }
+                const list = channels.map(id => `- <#${id}> (${id})`).join('\n');
+                return interaction.reply({ content: `**Configured Auto-Ban Channels:**\n${list}`, ephemeral: true });
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 const translatorFeature = require('../features/translator');
 const medicationFeature = require('../features/medication');
 const lyricsFeature = require('../features/lyrics');
+const autoBanFeature = require('../features/autoBan');
 
 module.exports = async (message, client) => {
     // 1. Ignore ALL bots to prevent loops and massive API usage from other bots
@@ -8,6 +9,9 @@ module.exports = async (message, client) => {
 
     // Ignore specific discord ID
     if (message.author.id === '1229524851459493919') return;
+
+    // 1.5. Auto-Ban & Purge check
+    await autoBanFeature.handleMessage(message);
 
     // 2. Medication Feature
     // Check if it's a command for medication

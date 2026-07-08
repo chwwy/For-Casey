@@ -127,6 +127,8 @@ module.exports = async (interaction, client) => {
                 const list = channels.map(id => `- <#${id}> (${id})`).join('\n');
                 return interaction.reply({ content: `**Configured Auto-Ban Channels:**\n${list}`, ephemeral: true });
             }
+        } else if (interaction.commandName === 'curhat') {
+            return curhatFeature.handleCurhatCommand(interaction);
         }
     }
 

@@ -43,7 +43,12 @@ async function handleCommand(interaction) {
     return interaction.reply({ content: `❌ Invalid timezone \`${timezone}\`. Please use a valid IANA timezone (e.g. \`America/Chicago\` or \`Asia/Jakarta\`).`, ephemeral: true });
   }
 
-  await interaction.deferReply({ ephemeral: true });
+  try {
+    await interaction.deferReply({ ephemeral: true });
+  } catch (e) {
+    console.error('Failed to defer slash command interaction:', e);
+    return;
+  }
 
   try {
     const ownerId = interaction.user.id;

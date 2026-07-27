@@ -27,6 +27,16 @@ client.on(Events.InteractionCreate, (interaction) => require('./events/interacti
 client.on(Events.TypingStart, (typing) => require('./features/translator/index').handleTyping(typing));
 client.on(Events.ChannelDelete, (channel) => require('./features/curhat/index').handleChannelDelete(channel));
 
+client.on(Events.Error, (error) => {
+    console.error('Discord Client Error:', error);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+});
+
 if (!config.DISCORD_TOKEN) {
     console.error("Error: DISCORD_TOKEN is missing! Please set it in your environment variables.");
     process.exit(1);

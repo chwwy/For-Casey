@@ -129,12 +129,26 @@ module.exports = async (interaction, client) => {
             }
         } else if (interaction.commandName === 'curhat') {
             return curhatFeature.handleCurhatCommand(interaction);
+        } else if (interaction.commandName === 'mood-dashboard') {
+            return require('../features/mood-tracker').handleCommand(interaction);
         }
     }
 
     // 2. Handle Button Interactions
     if (interaction.isButton()) {
         const customId = interaction.customId;
+
+        if (
+            customId === 'mood_log' ||
+            customId === 'meds_log' ||
+            customId === 'sleep_log' ||
+            customId === 'caffeine_log' ||
+            customId === 'chart_view' ||
+            customId.startsWith('caffeine_other_btn:') ||
+            customId.startsWith('caffeine_type:')
+        ) {
+            return require('../features/mood-tracker').handleButton(interaction);
+        }
 
         if (customId.startsWith('curhat_access_')) {
             return curhatFeature.handleCurhatButton(interaction);
@@ -298,9 +312,34 @@ module.exports = async (interaction, client) => {
         }
     }
 
+    // Handle Select Menu Interactions
+    if (interaction.isStringSelectMenu()) {
+        const customId = interaction.customId;
+        if (
+            customId.startsWith('mood_core:') ||
+            customId.startsWith('mood_secondary:') ||
+            customId.startsWith('mood_specific:') ||
+            customId.startsWith('sleep_quality:') ||
+            customId.startsWith('chart_range:') ||
+            customId.startsWith('meds_select:')
+        ) {
+            return require('../features/mood-tracker').handleSelectMenu(interaction);
+        }
+    }
+
     // 3. Handle Modal Submissions
     if (interaction.isModalSubmit()) {
         const customId = interaction.customId;
+
+        if (
+            customId.startsWith('mood_note_modal:') ||
+            customId.startsWith('meds_modal:') ||
+            customId.startsWith('sleep_hours_modal:') ||
+            customId.startsWith('caffeine_other_modal:') ||
+            customId.startsWith('meds_dosage_modal:')
+        ) {
+            return require('../features/mood-tracker').handleModal(interaction);
+        }
 
         if (customId.startsWith('log_modal:')) {
             const parts = customId.split(':');

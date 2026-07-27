@@ -26,4 +26,7 @@ module.exports = async (client) => {
     // Initialize Schedulers
     initScheduler(client);
     require('../features/curhat').initInactivityScheduler(client);
+
+    // Initialize Mood Tracker Dashboards
+    require('../features/mood-tracker').initDashboards(client);
 };

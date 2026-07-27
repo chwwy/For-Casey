@@ -76,6 +76,24 @@ const commands = [
                 .setDescription('The number of seconds before messages are autodeleted.')
                 .setRequired(true)
                 .setMinValue(1)
+        ),
+    new SlashCommandBuilder()
+        .setName('mood-dashboard')
+        .setDescription('Manage the Mood Tracker Dashboard')
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('setup')
+                .setDescription('Set up the persistent mood tracker dashboard in this channel.')
+                .addStringOption(option =>
+                    option.setName('timezone')
+                        .setDescription('Your timezone (e.g. America/Chicago, Asia/Jakarta) - default is UTC')
+                        .setRequired(false)
+                )
+                .addStringOption(option =>
+                    option.setName('meds')
+                        .setDescription('Your medication list, comma-separated (e.g. Lexapro, Xanax)')
+                        .setRequired(false)
+                )
         )
 ]
     .map(command => command.toJSON());

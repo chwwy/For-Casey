@@ -16,7 +16,9 @@
     "dotenv": "^16.4.5",
     "genius-lyrics": "^4.4.7",
     "google-translate-api-x": "^10.7.2",
+    "luxon": "^3.7.2",
     "node-cron": "^4.2.1",
+    "quickchart-js": "^4.0.0",
     "undici": "^5.28.4"
   }
 }

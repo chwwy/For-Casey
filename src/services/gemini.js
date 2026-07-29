@@ -29,6 +29,15 @@ async function libreTranslate(text, targetLang) {
     }
 
     const data = await res.json();
+
+    // Only translate to English if the source language was detected as Indonesian (id)
+    if (targetLang === 'en') {
+        const detected = data.detectedLanguage?.language;
+        if (detected !== 'id') {
+            return null;
+        }
+    }
+
     return data.translatedText;
 }
 

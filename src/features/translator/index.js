@@ -158,7 +158,7 @@ function flushBatch(batchKey) {
     batchQueues.delete(batchKey);
 
     // Combine the messages
-    const combinedContent = userBatch.messages.map(m => m.content).filter(Boolean).join('\n');
+    const combinedContent = userBatch.messages.map(m => m.content).filter(Boolean).join(' ');
 
     // Extract media links
     let mainImageUrl = null;

@@ -20,7 +20,9 @@ module.exports = async (interaction, client) => {
             "alert", "alerts", "update", "testalerts", "login", 
             "2fa", "cookies", "settings", "logout", "forget", 
             "collection", "battlepass", "stats", "account", "accounts", 
-            "valstatus", "info", "profile"
+            "valstatus", "info", "profile",
+            // HenrikDev API commands
+            "rank", "matches", "mmrhistory", "leaderboard", "esports"
         ];
 
         if (interaction.isChatInputCommand() && valorantCommands.includes(interaction.commandName)) {

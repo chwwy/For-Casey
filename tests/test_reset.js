@@ -1,5 +1,5 @@
-const data = require('./src/features/medication/data');
-const config = require('./src/features/medication/config');
+const data = require('../src/features/medication/data');
+const config = require('../src/features/medication/config');
 
 for (const key of Object.keys(config.instances)) {
     console.log(`\n--- Instance: ${key} ---`);

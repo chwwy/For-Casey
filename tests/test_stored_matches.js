@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { getStoredMatches } from "./src/features/valorant/valorant/hdevApi.js";
+import { getStoredMatches } from "../src/features/valorant/valorant/hdevApi.js";
 
 async function main() {
     console.log("Token:", process.env.VALORANT_HDEV_TOKEN);

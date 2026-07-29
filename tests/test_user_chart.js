@@ -1,4 +1,4 @@
-const { generateChartUrls } = require('./src/features/mood-tracker/chart');
+const { generateChartUrls } = require('../src/features/mood-tracker/chart');
 const { request } = require('undici');
 
 console.log('--- Testing Real User Chart Generation ---');

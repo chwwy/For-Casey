@@ -78,131 +78,131 @@ module.exports = async (interaction, client) => {
 
         // 1. Handle Slash Commands
         if (interaction.isChatInputCommand()) {
-        if (interaction.commandName === 'log') {
-            const day = interaction.options.getString('day');
-            let slot = interaction.options.getString('slot');
+            if (interaction.commandName === 'log') {
+                const day = interaction.options.getString('day');
+                let slot = interaction.options.getString('slot');
 
-            // Identify Instance
-            const instance = config.getInstanceByChannel(interaction.channelId);
-            if (!instance) {
-                return interaction.reply({ content: 'This command can only be used in medication report channels.', ephemeral: true });
-            }
-
-            // Authorization Check
-            if (interaction.user.id !== instance.backupUserId) {
-                return interaction.reply({ content: '⛔ You are not authorized to log for this medication report.', ephemeral: true });
-            }
-
-            const { key: instanceKey, slots } = instance;
-
-            // Validate Slot
-            if (!slot) {
-                if (slots.length === 1) {
-                    slot = slots[0];
-                } else {
-                    return interaction.reply({ content: `Please specify a time slot. Available: ${slots.join(', ')}`, ephemeral: true });
-                }
-            } else if (!slots.includes(slot)) {
-                return interaction.reply({ content: `Invalid slot '${slot}' for this channel. Available: ${slots.join(', ')}`, ephemeral: true });
-            }
-
-            // Show Modal
-            const modal = new ModalBuilder()
-                .setCustomId(`log_modal:${slot}:${instanceKey}:${day}`)
-                .setTitle(`Log ${day} ${slot}`);
-
-            const moodInput = new TextInputBuilder()
-                .setCustomId('mood')
-                .setLabel('How did you feel? ❤️')
-                .setPlaceholder('Enter your mood or notes (optional)')
-                .setStyle(TextInputStyle.Paragraph)
-                .setRequired(false);
-
-            modal.addComponents(new ActionRowBuilder().addComponents(moodInput));
-
-            await interaction.showModal(modal);
-
-        } else if (interaction.commandName === 'remind') {
-            const slot = interaction.options.getString('slot');
-            const channelId = interaction.channelId;
-
-            // Identify Instance
-            const instance = config.getInstanceByChannel(channelId);
-            if (!instance) {
-                return interaction.reply({ content: 'This command can only be used in medication report channels.', ephemeral: true });
-            }
-
-            if (interaction.user.id !== instance.backupUserId) {
-                return interaction.reply({ content: '⛔ You are not authorized to create a reminder in this channel.', ephemeral: true });
-            }
-
-            if (!instance.slots.includes(slot)) {
-                return interaction.reply({ content: `Invalid slot '${slot}' for this channel. Available: ${instance.slots.join(', ')}`, ephemeral: true });
-            }
-
-            try {
-                let reminderMsg = `Hey! Don't forget to take your ${slot} pill and log it! 💊`;
-                if (instance.reminders && instance.reminders[slot]) {
-                    reminderMsg = instance.reminders[slot].message;
-                } else if (instance.reminder && slot === 'PM') {
-                    reminderMsg = instance.reminder.message;
-                } else if (instance.backupUserId) {
-                    reminderMsg = `Hey, <@${instance.backupUserId}>! Don't forget to take your ${slot} pill and log it! 💊`;
+                // Identify Instance
+                const instance = config.getInstanceByChannel(interaction.channelId);
+                if (!instance) {
+                    return interaction.reply({ content: 'This command can only be used in medication report channels.', ephemeral: true });
                 }
 
-                const row = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId(`remind_again_${slot}_${instance.key}`)
-                        .setLabel('Remind me again')
-                        .setStyle(ButtonStyle.Primary)
-                        .setEmoji('⏰')
-                );
-
-                const msg = await interaction.channel.send({ content: reminderMsg, components: [row] });
-                data.setReminderMessageId(instance.key, channelId, msg.id);
-                return interaction.reply({ content: `✅ Created a ${slot} reminder in this channel!`, ephemeral: true });
-            } catch (e) {
-                console.error(`Failed to create reminder:`, e);
-                return interaction.reply({ content: `Failed to create reminder.`, ephemeral: true });
-            }
-        } else if (interaction.commandName === 'banchannel') {
-            if (!interaction.member.permissions.has('Administrator')) {
-                return interaction.reply({ content: '⛔ You must be an Administrator to run this command.', ephemeral: true });
-            }
-
-            const autoBanConfig = require('../features/autoBan/config');
-            const subcommand = interaction.options.getSubcommand();
-
-            if (subcommand === 'add') {
-                const channel = interaction.options.getChannel('channel');
-                const added = autoBanConfig.addBanChannel(channel.id);
-                if (added) {
-                    return interaction.reply({ content: `✅ Added <#${channel.id}> to the auto-ban list.`, ephemeral: true });
-                } else {
-                    return interaction.reply({ content: `ℹ️ <#${channel.id}> is already in the auto-ban list.`, ephemeral: true });
+                // Authorization Check
+                if (interaction.user.id !== instance.backupUserId) {
+                    return interaction.reply({ content: '⛔ You are not authorized to log for this medication report.', ephemeral: true });
                 }
-            } else if (subcommand === 'remove') {
-                const channel = interaction.options.getChannel('channel');
-                const removed = autoBanConfig.removeBanChannel(channel.id);
-                if (removed) {
-                    return interaction.reply({ content: `✅ Removed <#${channel.id}> from the auto-ban list.`, ephemeral: true });
-                } else {
-                    return interaction.reply({ content: `ℹ️ <#${channel.id}> was not in the auto-ban list.`, ephemeral: true });
+
+                const { key: instanceKey, slots } = instance;
+
+                // Validate Slot
+                if (!slot) {
+                    if (slots.length === 1) {
+                        slot = slots[0];
+                    } else {
+                        return interaction.reply({ content: `Please specify a time slot. Available: ${slots.join(', ')}`, ephemeral: true });
+                    }
+                } else if (!slots.includes(slot)) {
+                    return interaction.reply({ content: `Invalid slot '${slot}' for this channel. Available: ${slots.join(', ')}`, ephemeral: true });
                 }
-            } else if (subcommand === 'list') {
-                const channels = autoBanConfig.getBanChannelIds();
-                if (channels.length === 0) {
-                    return interaction.reply({ content: 'ℹ️ There are no channels configured for auto-ban.', ephemeral: true });
+
+                // Show Modal
+                const modal = new ModalBuilder()
+                    .setCustomId(`log_modal:${slot}:${instanceKey}:${day}`)
+                    .setTitle(`Log ${day} ${slot}`);
+
+                const moodInput = new TextInputBuilder()
+                    .setCustomId('mood')
+                    .setLabel('How did you feel? ❤️')
+                    .setPlaceholder('Enter your mood or notes (optional)')
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setRequired(false);
+
+                modal.addComponents(new ActionRowBuilder().addComponents(moodInput));
+
+                await interaction.showModal(modal);
+
+            } else if (interaction.commandName === 'remind') {
+                const slot = interaction.options.getString('slot');
+                const channelId = interaction.channelId;
+
+                // Identify Instance
+                const instance = config.getInstanceByChannel(channelId);
+                if (!instance) {
+                    return interaction.reply({ content: 'This command can only be used in medication report channels.', ephemeral: true });
                 }
-                const list = channels.map(id => `- <#${id}> (${id})`).join('\n');
-                return interaction.reply({ content: `**Configured Auto-Ban Channels:**\n${list}`, ephemeral: true });
+
+                if (interaction.user.id !== instance.backupUserId) {
+                    return interaction.reply({ content: '⛔ You are not authorized to create a reminder in this channel.', ephemeral: true });
+                }
+
+                if (!instance.slots.includes(slot)) {
+                    return interaction.reply({ content: `Invalid slot '${slot}' for this channel. Available: ${instance.slots.join(', ')}`, ephemeral: true });
+                }
+
+                try {
+                    let reminderMsg = `Hey! Don't forget to take your ${slot} pill and log it! 💊`;
+                    if (instance.reminders && instance.reminders[slot]) {
+                        reminderMsg = instance.reminders[slot].message;
+                    } else if (instance.reminder && slot === 'PM') {
+                        reminderMsg = instance.reminder.message;
+                    } else if (instance.backupUserId) {
+                        reminderMsg = `Hey, <@${instance.backupUserId}>! Don't forget to take your ${slot} pill and log it! 💊`;
+                    }
+
+                    const row = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`remind_again_${slot}_${instance.key}`)
+                            .setLabel('Remind me again')
+                            .setStyle(ButtonStyle.Primary)
+                            .setEmoji('⏰')
+                    );
+
+                    const msg = await interaction.channel.send({ content: reminderMsg, components: [row] });
+                    data.setReminderMessageId(instance.key, channelId, msg.id);
+                    return interaction.reply({ content: `✅ Created a ${slot} reminder in this channel!`, ephemeral: true });
+                } catch (e) {
+                    console.error(`Failed to create reminder:`, e);
+                    return interaction.reply({ content: `Failed to create reminder.`, ephemeral: true });
+                }
+            } else if (interaction.commandName === 'banchannel') {
+                if (!interaction.member.permissions.has('Administrator')) {
+                    return interaction.reply({ content: '⛔ You must be an Administrator to run this command.', ephemeral: true });
+                }
+
+                const autoBanConfig = require('../features/autoBan/config');
+                const subcommand = interaction.options.getSubcommand();
+
+                if (subcommand === 'add') {
+                    const channel = interaction.options.getChannel('channel');
+                    const added = autoBanConfig.addBanChannel(channel.id);
+                    if (added) {
+                        return interaction.reply({ content: `✅ Added <#${channel.id}> to the auto-ban list.`, ephemeral: true });
+                    } else {
+                        return interaction.reply({ content: `ℹ️ <#${channel.id}> is already in the auto-ban list.`, ephemeral: true });
+                    }
+                } else if (subcommand === 'remove') {
+                    const channel = interaction.options.getChannel('channel');
+                    const removed = autoBanConfig.removeBanChannel(channel.id);
+                    if (removed) {
+                        return interaction.reply({ content: `✅ Removed <#${channel.id}> from the auto-ban list.`, ephemeral: true });
+                    } else {
+                        return interaction.reply({ content: `ℹ️ <#${channel.id}> was not in the auto-ban list.`, ephemeral: true });
+                    }
+                } else if (subcommand === 'list') {
+                    const channels = autoBanConfig.getBanChannelIds();
+                    if (channels.length === 0) {
+                        return interaction.reply({ content: 'ℹ️ There are no channels configured for auto-ban.', ephemeral: true });
+                    }
+                    const list = channels.map(id => `- <#${id}> (${id})`).join('\n');
+                    return interaction.reply({ content: `**Configured Auto-Ban Channels:**\n${list}`, ephemeral: true });
+                }
+            } else if (interaction.commandName === 'curhat') {
+                return curhatFeature.handleCurhatCommand(interaction);
+            } else if (interaction.commandName === 'mood-dashboard') {
+                return require('../features/mood-tracker').handleCommand(interaction);
             }
-        } else if (interaction.commandName === 'curhat') {
-            return curhatFeature.handleCurhatCommand(interaction);
-        } else if (interaction.commandName === 'mood-dashboard') {
-            return require('../features/mood-tracker').handleCommand(interaction);
         }
-    }
 
     // 2. Handle Button Interactions
     if (interaction.isButton()) {

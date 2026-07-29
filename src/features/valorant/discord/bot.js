@@ -90,6 +90,8 @@ import fuzzysort from "fuzzysort";
 import { renderCollection, getSkins } from "../valorant/inventory.js";
 import { getLoadout } from "../valorant/inventory.js";
 import { getAccountInfo, fetchMatchHistory } from "../valorant/profile.js";
+import { getMMR, getMatches, getMMRHistory, getLeaderboard, getEsportsSchedule, getEsportsEvents } from "../valorant/hdevApi.js";
+import { rankEmbed, matchesEmbed, mmrHistoryEmbed, leaderboardEmbed, esportsEmbed, esportsEventsEmbed, hdevErrorEmbed } from "./hdevEmbed.js";
 import { spawn } from "child_process";
 import * as fs from "fs";
 
@@ -363,6 +365,93 @@ const commands = [
             description: "Optional: see someone else's profile!",
             required: false
         }]
+    },
+
+    // ── HenrikDev API commands ─────────────────────────────────────────────────
+
+    {
+        name: "rank",
+        description: "🏆 Look up any player's current Valorant rank (public lookup)",
+        options: [
+            { type: ApplicationCommandOptionType.String, name: "name", description: "Riot ID name (e.g. Casey)", required: true },
+            { type: ApplicationCommandOptionType.String, name: "tag", description: "Riot ID tag without the # (e.g. NA1)", required: true },
+            {
+                type: ApplicationCommandOptionType.String, name: "region", description: "Region", required: true,
+                choices: [
+                    { name: "North America", value: "na" }, { name: "Europe", value: "eu" },
+                    { name: "Asia Pacific", value: "ap" }, { name: "Korea", value: "kr" },
+                    { name: "Latin America", value: "latam" }, { name: "Brazil", value: "br" }
+                ]
+            }
+        ]
+    },
+    {
+        name: "matches",
+        description: "🎮 Look up recent matches for any Valorant player (public lookup)",
+        options: [
+            { type: ApplicationCommandOptionType.String, name: "name", description: "Riot ID name (e.g. Casey)", required: true },
+            { type: ApplicationCommandOptionType.String, name: "tag", description: "Riot ID tag without the # (e.g. NA1)", required: true },
+            {
+                type: ApplicationCommandOptionType.String, name: "region", description: "Region", required: true,
+                choices: [
+                    { name: "North America", value: "na" }, { name: "Europe", value: "eu" },
+                    { name: "Asia Pacific", value: "ap" }, { name: "Korea", value: "kr" },
+                    { name: "Latin America", value: "latam" }, { name: "Brazil", value: "br" }
+                ]
+            },
+            {
+                type: ApplicationCommandOptionType.String, name: "mode", description: "Game mode (default: competitive)", required: false,
+                choices: [
+                    { name: "Competitive", value: "competitive" }, { name: "Unrated", value: "unrated" },
+                    { name: "Swiftplay", value: "swiftplay" }, { name: "Spike Rush", value: "spikerush" },
+                    { name: "Deathmatch", value: "deathmatch" }, { name: "Team Deathmatch", value: "teamdeathmatch" }
+                ]
+            }
+        ]
+    },
+    {
+        name: "mmrhistory",
+        description: "📈 Look up rank change history for any Valorant player (public lookup)",
+        options: [
+            { type: ApplicationCommandOptionType.String, name: "name", description: "Riot ID name (e.g. Casey)", required: true },
+            { type: ApplicationCommandOptionType.String, name: "tag", description: "Riot ID tag without the # (e.g. NA1)", required: true },
+            {
+                type: ApplicationCommandOptionType.String, name: "region", description: "Region", required: true,
+                choices: [
+                    { name: "North America", value: "na" }, { name: "Europe", value: "eu" },
+                    { name: "Asia Pacific", value: "ap" }, { name: "Korea", value: "kr" },
+                    { name: "Latin America", value: "latam" }, { name: "Brazil", value: "br" }
+                ]
+            }
+        ]
+    },
+    {
+        name: "leaderboard",
+        description: "🏅 Show the top ranked players on any region's leaderboard",
+        options: [
+            {
+                type: ApplicationCommandOptionType.String, name: "region", description: "Region", required: true,
+                choices: [
+                    { name: "North America", value: "na" }, { name: "Europe", value: "eu" },
+                    { name: "Asia Pacific", value: "ap" }, { name: "Korea", value: "kr" },
+                    { name: "Latin America", value: "latam" }, { name: "Brazil", value: "br" }
+                ]
+            }
+        ]
+    },
+    {
+        name: "esports",
+        description: "📅 Show upcoming VCT esports schedule and events",
+        options: [
+            {
+                type: ApplicationCommandOptionType.String, name: "region", description: "Filter by region (optional)", required: false,
+                choices: [
+                    { name: "North America", value: "na" }, { name: "Europe", value: "eu" },
+                    { name: "Pacific", value: "ap" }, { name: "China", value: "cn" },
+                    { name: "All Regions", value: "" }
+                ]
+            }
+        ]
     }
 ];
 
@@ -1200,6 +1289,94 @@ export const handleInteraction = async (interaction) => {
 
                     break;
                 }
+
+                // ── HenrikDev API commands ──────────────────────────────────────────────
+
+                case "rank": {
+                    await defer(interaction);
+                    const name = interaction.options.getString("name");
+                    const tag = interaction.options.getString("tag");
+                    const region = interaction.options.getString("region");
+
+                    const { data, error } = await getMMR(region, name, tag, "pc");
+                    if (error || !data) {
+                        return await interaction.followUp({ embeds: [hdevErrorEmbed(error || "Could not fetch rank data.")], ephemeral: true });
+                    }
+
+                    await interaction.followUp(rankEmbed(data, name, tag));
+                    console.log(`Sent rank for ${name}#${tag} (${region})`);
+                    break;
+                }
+
+                case "matches": {
+                    await defer(interaction);
+                    const name = interaction.options.getString("name");
+                    const tag = interaction.options.getString("tag");
+                    const region = interaction.options.getString("region");
+                    const mode = interaction.options.getString("mode") || "competitive";
+
+                    const { data, error } = await getMatches(region, name, tag, mode, 5, "pc");
+                    if (error || !data) {
+                        return await interaction.followUp({ embeds: [hdevErrorEmbed(error || "Could not fetch match data.")], ephemeral: true });
+                    }
+
+                    // v4 response wraps matches in data.history
+                    const matchList = data.history || data;
+                    await interaction.followUp(matchesEmbed(matchList, name, tag, mode));
+                    console.log(`Sent matches for ${name}#${tag} (${region}, ${mode})`);
+                    break;
+                }
+
+                case "mmrhistory": {
+                    await defer(interaction);
+                    const name = interaction.options.getString("name");
+                    const tag = interaction.options.getString("tag");
+                    const region = interaction.options.getString("region");
+
+                    const { data, error } = await getMMRHistory(region, name, tag, "pc");
+                    if (error || !data) {
+                        return await interaction.followUp({ embeds: [hdevErrorEmbed(error || "Could not fetch MMR history.")], ephemeral: true });
+                    }
+
+                    const history = data.history || data;
+                    await interaction.followUp(mmrHistoryEmbed(history, name, tag));
+                    console.log(`Sent MMR history for ${name}#${tag} (${region})`);
+                    break;
+                }
+
+                case "leaderboard": {
+                    await defer(interaction);
+                    const region = interaction.options.getString("region");
+
+                    const { data, error } = await getLeaderboard(region, "pc", 20, 0);
+                    if (error || !data) {
+                        return await interaction.followUp({ embeds: [hdevErrorEmbed(error || "Could not fetch leaderboard.")], ephemeral: true });
+                    }
+
+                    await interaction.followUp(leaderboardEmbed(data, region));
+                    console.log(`Sent leaderboard for ${region}`);
+                    break;
+                }
+
+                case "esports": {
+                    await defer(interaction);
+                    const region = interaction.options.getString("region") || null;
+
+                    // Try VLR events first (richer data), fall back to schedule
+                    const { data: events, error: evErr } = await getEsportsEvents(region || null, null, 0);
+                    if (!evErr && events?.length > 0) {
+                        await interaction.followUp(esportsEventsEmbed(events));
+                    } else {
+                        const { data: schedule, error: schErr } = await getEsportsSchedule(region || null);
+                        if (schErr || !schedule) {
+                            return await interaction.followUp({ embeds: [hdevErrorEmbed(schErr || "Could not fetch esports schedule.")], ephemeral: true });
+                        }
+                        await interaction.followUp(esportsEmbed(schedule));
+                    }
+                    console.log(`Sent esports info (region: ${region || "all"})`);
+                    break;
+                }
+
                 default: {
                     await interaction.reply(s(interaction).info.UNHANDLED_COMMAND);
                     break;

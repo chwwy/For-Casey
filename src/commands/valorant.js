@@ -249,6 +249,162 @@ const commands = [
             description: "Optional: see someone else's profile!",
             required: false
         }]
+    },
+
+    // ── HenrikDev API commands ─────────────────────────────────────────────────
+
+    {
+        name: "rank",
+        description: "🏆 Look up any player's current Valorant rank (public lookup)",
+        options: [
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "name",
+                description: "Riot ID name (e.g. Casey)",
+                required: true
+            },
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "tag",
+                description: "Riot ID tag (e.g. NA1 — without the #)",
+                required: true
+            },
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "region",
+                description: "Region (na, eu, ap, kr, latam, br)",
+                required: true,
+                choices: [
+                    { name: "North America", value: "na" },
+                    { name: "Europe", value: "eu" },
+                    { name: "Asia Pacific", value: "ap" },
+                    { name: "Korea", value: "kr" },
+                    { name: "Latin America", value: "latam" },
+                    { name: "Brazil", value: "br" }
+                ]
+            }
+        ]
+    },
+
+    {
+        name: "matches",
+        description: "🎮 Look up recent matches for any Valorant player (public lookup)",
+        options: [
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "name",
+                description: "Riot ID name (e.g. Casey)",
+                required: true
+            },
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "tag",
+                description: "Riot ID tag (e.g. NA1 — without the #)",
+                required: true
+            },
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "region",
+                description: "Region (na, eu, ap, kr, latam, br)",
+                required: true,
+                choices: [
+                    { name: "North America", value: "na" },
+                    { name: "Europe", value: "eu" },
+                    { name: "Asia Pacific", value: "ap" },
+                    { name: "Korea", value: "kr" },
+                    { name: "Latin America", value: "latam" },
+                    { name: "Brazil", value: "br" }
+                ]
+            },
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "mode",
+                description: "Game mode (default: competitive)",
+                required: false,
+                choices: [
+                    { name: "Competitive", value: "competitive" },
+                    { name: "Unrated", value: "unrated" },
+                    { name: "Swiftplay", value: "swiftplay" },
+                    { name: "Spike Rush", value: "spikerush" },
+                    { name: "Deathmatch", value: "deathmatch" },
+                    { name: "Team Deathmatch", value: "teamdeathmatch" }
+                ]
+            }
+        ]
+    },
+
+    {
+        name: "mmrhistory",
+        description: "📈 Look up rank change history for any Valorant player (public lookup)",
+        options: [
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "name",
+                description: "Riot ID name (e.g. Casey)",
+                required: true
+            },
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "tag",
+                description: "Riot ID tag (e.g. NA1 — without the #)",
+                required: true
+            },
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "region",
+                description: "Region (na, eu, ap, kr, latam, br)",
+                required: true,
+                choices: [
+                    { name: "North America", value: "na" },
+                    { name: "Europe", value: "eu" },
+                    { name: "Asia Pacific", value: "ap" },
+                    { name: "Korea", value: "kr" },
+                    { name: "Latin America", value: "latam" },
+                    { name: "Brazil", value: "br" }
+                ]
+            }
+        ]
+    },
+
+    {
+        name: "leaderboard",
+        description: "🏅 Show the top ranked players on any region's leaderboard",
+        options: [
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "region",
+                description: "Region (na, eu, ap, kr, latam, br)",
+                required: true,
+                choices: [
+                    { name: "North America", value: "na" },
+                    { name: "Europe", value: "eu" },
+                    { name: "Asia Pacific", value: "ap" },
+                    { name: "Korea", value: "kr" },
+                    { name: "Latin America", value: "latam" },
+                    { name: "Brazil", value: "br" }
+                ]
+            }
+        ]
+    },
+
+    {
+        name: "esports",
+        description: "📅 Show upcoming VCT esports schedule and events",
+        options: [
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "region",
+                description: "Filter by region (optional)",
+                required: false,
+                choices: [
+                    { name: "North America", value: "na" },
+                    { name: "Europe", value: "eu" },
+                    { name: "Pacific", value: "ap" },
+                    { name: "China", value: "cn" },
+                    { name: "All Regions", value: "" }
+                ]
+            }
+        ]
     }
 ];
 

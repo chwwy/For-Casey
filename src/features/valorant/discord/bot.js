@@ -90,8 +90,8 @@ import fuzzysort from "fuzzysort";
 import { renderCollection, getSkins } from "../valorant/inventory.js";
 import { getLoadout } from "../valorant/inventory.js";
 import { getAccountInfo, fetchMatchHistory } from "../valorant/profile.js";
-import { getMMR, getMatches, getMMRHistory, getLeaderboard, getEsportsSchedule, getEsportsEvents } from "../valorant/hdevApi.js";
-import { rankEmbed, matchesEmbed, mmrHistoryEmbed, leaderboardEmbed, esportsEmbed, esportsEventsEmbed, hdevErrorEmbed } from "./hdevEmbed.js";
+import { getMMR, getMatches, getMMRHistory, getLeaderboard, getEsportsSchedule, getEsportsEvents, getStoredMatches } from "../valorant/hdevApi.js";
+import { rankEmbed, matchesEmbed, mmrHistoryEmbed, leaderboardEmbed, esportsEmbed, esportsEventsEmbed, hdevErrorEmbed, playerStatsEmbed, playerMatchHistoryEmbed } from "./hdevEmbed.js";
 import { spawn } from "child_process";
 import * as fs from "fs";
 
@@ -449,6 +449,37 @@ const commands = [
                     { name: "North America", value: "na" }, { name: "Europe", value: "eu" },
                     { name: "Pacific", value: "ap" }, { name: "China", value: "cn" },
                     { name: "All Regions", value: "" }
+                ]
+            }
+        ]
+    },
+    {
+        name: "playerstats",
+        description: "📊 Deep stats for any player — KD, HS%, win rate, per-match breakdown (public lookup)",
+        options: [
+            { type: ApplicationCommandOptionType.String, name: "name", description: "Riot ID name (e.g. Casey)", required: true },
+            { type: ApplicationCommandOptionType.String, name: "tag", description: "Riot ID tag without the # (e.g. NA1)", required: true },
+            {
+                type: ApplicationCommandOptionType.String, name: "region", description: "Region", required: true,
+                choices: [
+                    { name: "North America", value: "na" }, { name: "Europe", value: "eu" },
+                    { name: "Asia Pacific", value: "ap" }, { name: "Korea", value: "kr" },
+                    { name: "Latin America", value: "latam" }, { name: "Brazil", value: "br" }
+                ]
+            },
+            {
+                type: ApplicationCommandOptionType.String, name: "view", description: "What to show (default: overview)", required: false,
+                choices: [
+                    { name: "Overview (KD, HS%, win rate, top agents)", value: "overview" },
+                    { name: "Match History (per-match KDA + HS%)", value: "history" }
+                ]
+            },
+            {
+                type: ApplicationCommandOptionType.String, name: "mode", description: "Game mode filter (default: competitive)", required: false,
+                choices: [
+                    { name: "Competitive", value: "competitive" }, { name: "Unrated", value: "unrated" },
+                    { name: "Swiftplay", value: "swiftplay" }, { name: "Spike Rush", value: "spikerush" },
+                    { name: "Deathmatch", value: "deathmatch" }
                 ]
             }
         ]
@@ -1374,6 +1405,31 @@ export const handleInteraction = async (interaction) => {
                         await interaction.followUp(esportsEmbed(schedule));
                     }
                     console.log(`Sent esports info (region: ${region || "all"})`);
+                    break;
+                }
+
+                case "playerstats": {
+                    await defer(interaction);
+                    const name = interaction.options.getString("name");
+                    const tag = interaction.options.getString("tag");
+                    const region = interaction.options.getString("region");
+                    const view = interaction.options.getString("view") || "overview";
+                    const mode = interaction.options.getString("mode") || "competitive";
+
+                    const { data, error } = await getStoredMatches(region, name, tag, mode, 20);
+                    if (error || !data) {
+                        return await interaction.followUp({
+                            embeds: [hdevErrorEmbed(error || "No stored matches found for this player. Play a match and try again later.")],
+                            ephemeral: true
+                        });
+                    }
+
+                    if (view === "history") {
+                        await interaction.followUp(playerMatchHistoryEmbed(data, name, tag, mode));
+                    } else {
+                        await interaction.followUp(playerStatsEmbed(data, name, tag, mode));
+                    }
+                    console.log(`Sent ${view} playerstats for ${name}#${tag} (${region}, ${mode})`);
                     break;
                 }
 

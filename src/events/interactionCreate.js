@@ -22,7 +22,7 @@ module.exports = async (interaction, client) => {
             "collection", "battlepass", "stats", "account", "accounts", 
             "valstatus", "info", "profile",
             // HenrikDev API commands
-            "rank", "matches", "mmrhistory", "leaderboard", "esports"
+            "rank", "matches", "mmrhistory", "leaderboard", "esports", "playerstats"
         ];
 
         if (interaction.isChatInputCommand() && valorantCommands.includes(interaction.commandName)) {

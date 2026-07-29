@@ -273,6 +273,173 @@ export const esportsEventsEmbed = (events) => {
     return { embeds: [embed] };
 };
 
+// ── /playerstats overview embed ───────────────────────────────────────────────
+
+const TIER_NAMES = [
+    "Unranked","Unused1","Unused2","Iron 1","Iron 2","Iron 3",
+    "Bronze 1","Bronze 2","Bronze 3","Silver 1","Silver 2","Silver 3",
+    "Gold 1","Gold 2","Gold 3","Platinum 1","Platinum 2","Platinum 3",
+    "Diamond 1","Diamond 2","Diamond 3","Ascendant 1","Ascendant 2","Ascendant 3",
+    "Immortal 1","Immortal 2","Immortal 3","Radiant"
+];
+
+/** Compute HS% from a shots object */
+const calcHS = (shots) => {
+    if (!shots) return null;
+    const total = (shots.head || 0) + (shots.body || 0) + (shots.leg || 0);
+    if (total === 0) return null;
+    return Math.round((shots.head / total) * 100);
+};
+
+/** Determine win/loss from a stored-match entry using team scores */
+const isWin = (match) => {
+    const team = (match.stats?.team || "").toLowerCase();
+    const red = match.teams?.red ?? 0;
+    const blue = match.teams?.blue ?? 0;
+    if (team === "red") return red > blue;
+    if (team === "blue") return blue > red;
+    return false;
+};
+
+/**
+ * Build the aggregated stats overview embed (overall KD, HS%, win rate, top agents, etc.)
+ * @param {Array}  matches  data[] from stored-matches response
+ * @param {string} name
+ * @param {string} tag
+ * @param {string} mode     game mode label
+ */
+export const playerStatsEmbed = (matches, name, tag, mode = "competitive") => {
+    const embed = new EmbedBuilder()
+        .setColor(VAL_COLOR_1)
+        .setTitle(`📊 ${name}#${tag} — Stats Overview (${cap(mode)})`);
+
+    if (!matches || matches.length === 0) {
+        embed.setDescription("No stored matches found. Matches are stored after they are fetched by someone using Henrik's API.");
+        return { embeds: [embed] };
+    }
+
+    // ── Aggregate stats ────────────────────────────────────────────────────────
+    let totalKills = 0, totalDeaths = 0, totalAssists = 0;
+    let totalHead = 0, totalBody = 0, totalLeg = 0;
+    let totalDamage = 0, totalWins = 0;
+    const agentCount = {}, mapCount = {};
+
+    for (const m of matches) {
+        const s = m.stats;
+        if (!s) continue;
+
+        totalKills   += s.kills   || 0;
+        totalDeaths  += s.deaths  || 0;
+        totalAssists += s.assists || 0;
+        totalDamage  += s.damage?.made || 0;
+
+        totalHead += s.shots?.head || 0;
+        totalBody += s.shots?.body || 0;
+        totalLeg  += s.shots?.leg  || 0;
+
+        if (isWin(m)) totalWins++;
+
+        const agent = s.character?.name || "Unknown";
+        agentCount[agent] = (agentCount[agent] || 0) + 1;
+
+        const map = m.meta?.map?.name || "Unknown";
+        mapCount[map] = (mapCount[map] || 0) + 1;
+    }
+
+    const n = matches.length;
+    const kd = totalDeaths > 0 ? (totalKills / totalDeaths).toFixed(2) : totalKills.toFixed(2);
+    const totalShots = totalHead + totalBody + totalLeg;
+    const hsPercent = totalShots > 0 ? Math.round((totalHead / totalShots) * 100) : 0;
+    const winRate = Math.round((totalWins / n) * 100);
+    const avgKills = (totalKills / n).toFixed(1);
+    const avgDeaths = (totalDeaths / n).toFixed(1);
+    const avgDmg = Math.round(totalDamage / n);
+
+    // Top 3 agents
+    const topAgents = Object.entries(agentCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([a, c]) => `${a} (${c})`).join(", ");
+
+    // Top 3 maps
+    const topMaps = Object.entries(mapCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([m, c]) => `${m} (${c})`).join(", ");
+
+    // KD color indicator
+    const kdIcon = parseFloat(kd) >= 1.5 ? "🟢" : parseFloat(kd) >= 1.0 ? "🟡" : "🔴";
+    const hsIcon = hsPercent >= 25 ? "🟢" : hsPercent >= 15 ? "🟡" : "🔴";
+    const wrIcon = winRate >= 55 ? "🟢" : winRate >= 45 ? "🟡" : "🔴";
+
+    embed.addFields(
+        { name: `${kdIcon} K/D Ratio`, value: `**${kd}**`, inline: true },
+        { name: `${hsIcon} HS%`, value: `**${hsPercent}%**`, inline: true },
+        { name: `${wrIcon} Win Rate`, value: `**${winRate}%** (${totalWins}/${n})`, inline: true },
+        { name: "⚔️ Avg Kills", value: avgKills, inline: true },
+        { name: "💀 Avg Deaths", value: avgDeaths, inline: true },
+        { name: "💥 Avg Damage", value: `${avgDmg}`, inline: true },
+        { name: "🎭 Top Agents", value: topAgents || "—", inline: false },
+        { name: "🗺️ Top Maps", value: topMaps || "—", inline: false }
+    );
+
+    embed.setFooter({ text: `Based on ${n} stored matches  •  Use /matches to see recent games` });
+    return { embeds: [embed] };
+};
+
+/**
+ * Build the per-match breakdown embed showing individual match rows.
+ * @param {Array}  matches  data[] from stored-matches response (up to 10 shown)
+ * @param {string} name
+ * @param {string} tag
+ * @param {string} mode
+ */
+export const playerMatchHistoryEmbed = (matches, name, tag, mode = "competitive") => {
+    const embed = new EmbedBuilder()
+        .setColor(VAL_COLOR_RANK)
+        .setTitle(`🎮 ${name}#${tag} — Match History (${cap(mode)})`);
+
+    if (!matches || matches.length === 0) {
+        embed.setDescription("No stored matches found.");
+        return { embeds: [embed] };
+    }
+
+    const lines = matches.slice(0, 10).map((m, i) => {
+        const s = m.stats;
+        const map    = m.meta?.map?.name || "?";
+        const agent  = s?.character?.name || "?";
+        const kills  = s?.kills ?? 0;
+        const deaths = s?.deaths ?? 0;
+        const assists = s?.assists ?? 0;
+        const kd     = deaths > 0 ? (kills / deaths).toFixed(1) : kills.toFixed(1);
+        const hs     = calcHS(s?.shots);
+        const hsStr  = hs !== null ? `${hs}%HS` : "";
+        const dmg    = s?.damage?.made ?? 0;
+        const won    = isWin(m);
+        const result = won ? "✅" : "❌";
+        const teamScore = (() => {
+            const team = (s?.team || "").toLowerCase();
+            const red = m.teams?.red ?? "?";
+            const blue = m.teams?.blue ?? "?";
+            if (team === "blue") return `${blue}-${red}`;
+            if (team === "red")  return `${red}-${blue}`;
+            return `${blue}-${red}`;
+        })();
+        const ts = fmtTs(m.meta?.started_at);
+        const tier = s?.tier != null && TIER_NAMES[s.tier] ? TIER_NAMES[s.tier] : null;
+        const tierStr = tier ? ` · ${tier}` : "";
+
+        return (
+            `${result} **${map}** (${agent}) · ${teamScore}${tierStr} ${ts}\n` +
+            `  └ KDA: \`${kills}/${deaths}/${assists}\` · K/D: \`${kd}\`${hsStr ? ` · HS: \`${hsStr}\`` : ""} · Dmg: \`${dmg}\``
+        );
+    });
+
+    embed.setDescription(lines.join("\n\n"));
+    embed.setFooter({ text: `Showing ${Math.min(matches.length, 10)} of ${matches.length} stored matches` });
+    return { embeds: [embed] };
+};
+
 // ── Generic error embed ───────────────────────────────────────────────────────
 
 export const hdevErrorEmbed = (message) =>

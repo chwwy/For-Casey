@@ -405,7 +405,64 @@ const commands = [
                 ]
             }
         ]
+    },
+
+    {
+        name: "playerstats",
+        description: "📊 Deep stats for any player — KD, HS%, win rate, per-match breakdown (public lookup)",
+        options: [
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "name",
+                description: "Riot ID name (e.g. Casey)",
+                required: true
+            },
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "tag",
+                description: "Riot ID tag without the # (e.g. NA1)",
+                required: true
+            },
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "region",
+                description: "Region (na, eu, ap, kr, latam, br)",
+                required: true,
+                choices: [
+                    { name: "North America", value: "na" },
+                    { name: "Europe", value: "eu" },
+                    { name: "Asia Pacific", value: "ap" },
+                    { name: "Korea", value: "kr" },
+                    { name: "Latin America", value: "latam" },
+                    { name: "Brazil", value: "br" }
+                ]
+            },
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "view",
+                description: "What to show (default: overview)",
+                required: false,
+                choices: [
+                    { name: "Overview (KD, HS%, win rate, top agents)", value: "overview" },
+                    { name: "Match History (per-match KDA + HS%)", value: "history" }
+                ]
+            },
+            {
+                type: ApplicationCommandOptionType.String,
+                name: "mode",
+                description: "Game mode filter (default: competitive)",
+                required: false,
+                choices: [
+                    { name: "Competitive", value: "competitive" },
+                    { name: "Unrated", value: "unrated" },
+                    { name: "Swiftplay", value: "swiftplay" },
+                    { name: "Spike Rush", value: "spikerush" },
+                    { name: "Deathmatch", value: "deathmatch" }
+                ]
+            }
+        ]
     }
 ];
 
 module.exports = commands;
+

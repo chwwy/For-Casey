@@ -141,3 +141,33 @@ export const getPremierTeam = (name, tag, affinity = null) => {
     const qs = params.toString() ? `?${params.toString()}` : "";
     return hdevFetch(`/valorant/v1/premier/${encodeURIComponent(name)}/${encodeURIComponent(tag)}${qs}`);
 };
+
+// ─────────────────────────────────────────────
+// Stored Matches (detailed stats)
+// ─────────────────────────────────────────────
+
+/**
+ * Get stored matches with full per-match stats (shots, damage, score, etc.)
+ * Uses the v1 stored-matches endpoint which includes shots data for HS% calculation.
+ * @param {string} affinity  na | eu | ap | kr | latam | br
+ * @param {string} name
+ * @param {string} tag
+ * @param {string|null} mode   competitive | unrated | swiftplay | etc. (optional filter)
+ * @param {number} size        number of matches to fetch (default 20, max depends on API tier)
+ * @returns {Promise<{data: Array, status: number, error: string|null}>}
+ *
+ * Each match in data[] contains:
+ *   meta.id, meta.map.name, meta.mode, meta.started_at, meta.season.short, meta.region
+ *   stats.kills, stats.deaths, stats.assists, stats.score
+ *   stats.shots.head, stats.shots.body, stats.shots.leg   ← for HS% calculation
+ *   stats.damage.made, stats.damage.received
+ *   stats.character.name, stats.tier, stats.team
+ *   teams.red, teams.blue                                 ← round scores for win/loss
+ */
+export const getStoredMatches = (affinity, name, tag, mode = null, size = 20) => {
+    const params = new URLSearchParams();
+    if (mode) params.set("mode", mode);
+    if (size) params.set("size", size);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return hdevFetch(`/valorant/v1/stored-matches/${affinity}/${encodeURIComponent(name)}/${encodeURIComponent(tag)}${qs}`);
+};

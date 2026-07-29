@@ -406,7 +406,7 @@ export const playerStatsEmbed = (matches, name, tag, mode = "competitive") => {
         { name: "🗺️ Top Maps", value: topMaps || "—", inline: false }
     );
 
-    embed.setFooter({ text: `Based on ${n} stored matches  •  Use /matches to see recent games` });
+    embed.setFooter({ text: `Based on ${n} recent matches` });
     return { embeds: [embed] };
 };
 
@@ -459,7 +459,7 @@ export const playerMatchHistoryEmbed = (matches, name, tag, mode = "competitive"
     });
 
     embed.setDescription(lines.join("\n\n"));
-    embed.setFooter({ text: `Showing ${Math.min(matches.length, 10)} of ${matches.length} stored matches` });
+    embed.setFooter({ text: `Showing ${Math.min(matches.length, 10)} of ${matches.length} recent matches` });
     return { embeds: [embed] };
 };
 

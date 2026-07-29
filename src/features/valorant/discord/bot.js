@@ -1416,13 +1416,53 @@ export const handleInteraction = async (interaction) => {
                     const view = interaction.options.getString("view") || "overview";
                     const mode = interaction.options.getString("mode") || "competitive";
 
-                    const { data, error } = await getStoredMatches(region, name, tag, mode, 20);
-                    if (error || !data) {
+                    const { data: rawMatches, error } = await getMatches(region, name, tag, mode, 20, "pc");
+                    if (error || !rawMatches) {
                         return await interaction.followUp({
-                            embeds: [hdevErrorEmbed(error || "No stored matches found for this player. Play a match and try again later.")],
+                            embeds: [hdevErrorEmbed(error || "No recent matches found for this player. Play a match and try again later.")],
                             ephemeral: true
                         });
                     }
+
+                    const matchList = rawMatches.history || rawMatches;
+                    const data = matchList.map(m => {
+                        const me = m.players?.find(p =>
+                            p.name?.toLowerCase() === name.toLowerCase() &&
+                            p.tag?.toLowerCase() === tag.toLowerCase()
+                        ) || m.players?.[0];
+
+                        return {
+                            meta: {
+                                id: m.metadata?.match_id,
+                                map: {
+                                    name: m.metadata?.map?.name
+                                },
+                                mode: m.metadata?.queue?.name,
+                                started_at: m.metadata?.started_at,
+                                season: m.metadata?.season,
+                                region: m.metadata?.region
+                            },
+                            stats: {
+                                kills: me?.stats?.kills,
+                                deaths: me?.stats?.deaths,
+                                assists: me?.stats?.assists,
+                                score: me?.stats?.score,
+                                shots: {
+                                    head: me?.stats?.headshots,
+                                    body: me?.stats?.bodyshots,
+                                    leg: me?.stats?.legshots
+                                },
+                                damage: me?.stats?.damage,
+                                character: me?.agent,
+                                tier: me?.tier?.id,
+                                team: me?.team_id
+                            },
+                            teams: {
+                                red: m.teams?.find(t => t.team_id?.toLowerCase() === "red")?.rounds?.won ?? 0,
+                                blue: m.teams?.find(t => t.team_id?.toLowerCase() === "blue")?.rounds?.won ?? 0
+                            }
+                        };
+                    });
 
                     if (view === "history") {
                         await interaction.followUp(playerMatchHistoryEmbed(data, name, tag, mode));

@@ -78,6 +78,7 @@ function getCorrelationStats(userId, timezone, daysCount) {
   return {
     sleepText: `📈 **Sleep ↔ Mood**: ${descSleep}`,
     caffeineText: `☕ **Caffeine ↔ Mood**: ${descCaff}`,
+    disclaimer: `*Disclaimer: Correlation does not equal causation.*`
   };
 }
 
@@ -405,15 +406,13 @@ async function generateChartUrls(userId, username, timezone, daysCount = 7) {
     qcCaff.getShortUrl()
   ]);
 
-  // Warm up the QuickChart CDN/cache to prevent Discord proxy load/caching failures
-  try {
-    await Promise.all([
-      fetch(sleepChartUrl),
-      fetch(caffeineChartUrl)
-    ]);
-  } catch (e) {
+  // Warm up the QuickChart CDN/cache asynchronously (non-blocking)
+  Promise.all([
+    fetch(sleepChartUrl).catch(() => {}),
+    fetch(caffeineChartUrl).catch(() => {})
+  ]).catch(e => {
     console.error('Failed to pre-fetch QuickChart short URLs:', e);
-  }
+  });
 
   return { sleepChartUrl, caffeineChartUrl };
 }

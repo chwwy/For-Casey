@@ -270,6 +270,12 @@ export const renderBundles = async (bundles, interaction, VPemoji) => {
 
     if(bundles.length === 1) {
         const bundle = await getBundle(bundles[0].uuid);
+        if (bundle) {
+            if (bundle.price === null || bundle.price === undefined) bundle.price = bundles[0].price;
+            if (bundle.basePrice === null || bundle.basePrice === undefined) bundle.basePrice = bundles[0].basePrice;
+            if (bundle.expires === null || bundle.expires === undefined) bundle.expires = bundles[0].expires;
+            if (!bundle.items && bundles[0].items) bundle.items = bundles[0].items;
+        }
 
         const renderedBundle = await renderBundle(bundle, interaction, VPemoji, false);
         const titleEmbed = renderedBundle.embeds[0];
@@ -289,6 +295,12 @@ export const renderBundles = async (bundles, interaction, VPemoji) => {
 
     for(const bundleData of bundles) {
         const bundle = await getBundle(bundleData.uuid);
+        if (bundle) {
+            if (bundle.price === null || bundle.price === undefined) bundle.price = bundleData.price;
+            if (bundle.basePrice === null || bundle.basePrice === undefined) bundle.basePrice = bundleData.basePrice;
+            if (bundle.expires === null || bundle.expires === undefined) bundle.expires = bundleData.expires;
+            if (!bundle.items && bundleData.items) bundle.items = bundleData.items;
+        }
 
         const subName = bundle.subNames ? l(bundle.subNames, interaction) + "\n" : "";
         const slantedDescription = bundle.descriptions ? "*" + l(bundle.descriptions, interaction) + "*\n" : "";

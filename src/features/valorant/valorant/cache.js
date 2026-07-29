@@ -496,6 +496,29 @@ export const searchSkin = async (query, locale, limit = 20, threshold = -5000) =
 
 export const getBundle = async (uuid) => {
     await fetchData([bundles]);
+    if (!bundles[uuid]) {
+        console.log(`Bundle ${uuid} not found in cache. Refreshing bundles list...`);
+        try {
+            await getBundleList(bundles.version || "unknown");
+        } catch (e) {
+            console.error("Failed to refresh bundles list:", e);
+        }
+    }
+    if (!bundles[uuid]) {
+        console.log(`Bundle ${uuid} still not found after refresh. Returning fallback.`);
+        return {
+            uuid: uuid,
+            names: { "en-US": "Unknown Bundle" },
+            subNames: null,
+            descriptions: null,
+            icon: "https://media.valorant-api.com/playercards/9fb348bc-41a4-91ad-d131-1fa71d7403a5/displayicon.png",
+            items: null,
+            price: null,
+            basePrice: null,
+            expires: null,
+            last_seen: null
+        };
+    }
     return bundles[uuid];
 }
 

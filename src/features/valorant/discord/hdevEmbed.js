@@ -140,13 +140,14 @@ export const matchesEmbed = (matches, name, tag, mode = "competitive") => {
         const kdStr   = kdRatio.toFixed(2);
         const kdIcon  = kdRatio >= 1.5 ? "🟢" : kdRatio >= 1.0 ? "🟡" : "🔴";
 
-        // HS% — v4 API puts shots on me.shots or me.stats.shots
-        const shots = me?.shots || me?.stats?.shots;
+        // HS%
         const hsPercent = (() => {
-            if (!shots) return null;
-            const total = (shots.head || 0) + (shots.body || 0) + (shots.leg || 0);
+            const headshots = me?.stats?.headshots || 0;
+            const bodyshots = me?.stats?.bodyshots || 0;
+            const legshots  = me?.stats?.legshots  || 0;
+            const total = headshots + bodyshots + legshots;
             if (total === 0) return null;
-            return Math.round((shots.head / total) * 100);
+            return Math.ceil((headshots / total) * 100);
         })();
         const hsStr = hsPercent !== null ? ` · HS: \`${hsPercent}%\`` : "";
 

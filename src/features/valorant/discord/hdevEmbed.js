@@ -124,17 +124,39 @@ export const matchesEmbed = (matches, name, tag, mode = "competitive") => {
             p.tag?.toLowerCase() === tag.toLowerCase()
         ) || match.players?.[0];
 
-        const map = meta?.map?.name || "Unknown Map";
+        const map    = meta?.map?.name || "Unknown Map";
         const result = me?.team_id?.toLowerCase() === match.teams?.find(t => t.won)?.team_id?.toLowerCase() ? "✅ Win" : "❌ Loss";
-        const kda = me ? `${me.stats?.kills}/${me.stats?.deaths}/${me.stats?.assists}` : "?/?/?";
-        const agent = me?.agent?.name || "?";
+        const agent  = me?.agent?.name || "?";
+        const ts     = fmtTs(meta?.started_at);
+
+        // KDA
+        const kills   = me?.stats?.kills   ?? 0;
+        const deaths  = me?.stats?.deaths  ?? 0;
+        const assists = me?.stats?.assists ?? 0;
+        const kda = `${kills}/${deaths}/${assists}`;
+
+        // K/D ratio with color indicator
+        const kdRatio = deaths > 0 ? (kills / deaths) : kills;
+        const kdStr   = kdRatio.toFixed(2);
+        const kdIcon  = kdRatio >= 1.5 ? "🟢" : kdRatio >= 1.0 ? "🟡" : "🔴";
+
+        // HS% — v4 API puts shots on me.shots or me.stats.shots
+        const shots = me?.shots || me?.stats?.shots;
+        const hsPercent = (() => {
+            if (!shots) return null;
+            const total = (shots.head || 0) + (shots.body || 0) + (shots.leg || 0);
+            if (total === 0) return null;
+            return Math.round((shots.head / total) * 100);
+        })();
+        const hsStr = hsPercent !== null ? ` · HS: \`${hsPercent}%\`` : "";
+
+        // RR change
         const rr = me?.tier?.rr_change != null
             ? (me.tier.rr_change >= 0 ? `+${me.tier.rr_change}` : `${me.tier.rr_change}`) + " RR"
             : "";
-        const ts = fmtTs(meta?.started_at);
 
         return `**${i + 1}. ${result}** on **${map}** ${ts}\n` +
-               `  └ ${agent} — KDA: \`${kda}\`${rr ? `  ${rr}` : ""}`;
+               `  └ ${agent} · KDA: \`${kda}\` · ${kdIcon} K/D: \`${kdStr}\`${hsStr}${rr ? `  ${rr}` : ""}`;
     });
 
     embed.setDescription(lines.join("\n\n"));

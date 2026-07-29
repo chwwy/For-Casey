@@ -9,5 +9,7 @@ module.exports = {
     VIP_USERS: {
         '287489239250370560': 'Casey',
         '860909419226595328': 'Nao'
-    }
+    },
+    LIBRETRANSLATE_URL: process.env.LIBRETRANSLATE_URL,
+    LIBRETRANSLATE_API_KEY: process.env.LIBRETRANSLATE_API_KEY
 };

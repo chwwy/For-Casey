@@ -159,6 +159,7 @@ function flushBatch(batchKey) {
 
     // Combine the messages
     const combinedContent = userBatch.messages.map(m => m.content).filter(Boolean).join(' ');
+    const combinedContentOriginal = userBatch.messages.map(m => m.content).filter(Boolean).join('\n');
 
     // Extract media links
     let mainImageUrl = null;
@@ -235,8 +236,8 @@ function flushBatch(batchKey) {
         const descriptionParts = [];
         if (replyText) descriptionParts.push(replyText);
         if (translatedText) descriptionParts.push(`__**Translation :flag_us: (${userBatch.messages.length} msg${userBatch.messages.length > 1 ? 's' : ''})**__:\n${translatedText}`);
-        if (combinedContent) {
-            descriptionParts.push(`\n\n__**Original 🇮🇩 (${userBatch.messages.length} msg${userBatch.messages.length > 1 ? 's' : ''}):**__\n${combinedContent}`);
+        if (combinedContentOriginal) {
+            descriptionParts.push(`\n\n__**Original 🇮🇩 (${userBatch.messages.length} msg${userBatch.messages.length > 1 ? 's' : ''}):**__\n${combinedContentOriginal}`);
         }
         descriptionParts.push(`\n\n[Jump to Messages](${firstMessageUrl})`);
 

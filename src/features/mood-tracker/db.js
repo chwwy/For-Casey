@@ -1,7 +1,7 @@
 const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
-const { CORE_VALENCE } = require('./wheel');
+const { valenceOf } = require('./wheel-valence');
 
 // Open/create the SQLite database (supporting dynamic environment paths for persistent volumes)
 const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '../../../mood_tracker.db');
@@ -280,13 +280,13 @@ module.exports = {
     const totalLogsThisWeek = moodCount + medsCount + sleepCount + caffeineCount;
 
     // 2. Average Mood Valence this week
-    const moods = db.prepare('SELECT core_emotion FROM mood_logs WHERE user_id = ? AND logged_at >= ?').all(ownerId, utcMondayStart);
+    const moods = db.prepare('SELECT core_emotion, specific_feeling FROM mood_logs WHERE user_id = ? AND logged_at >= ?').all(ownerId, utcMondayStart);
     let avgValence = null;
     let avgMoodText = 'N/A';
     if (moods.length > 0) {
       let sumValence = 0;
       for (const m of moods) {
-        sumValence += CORE_VALENCE[m.core_emotion] || 0;
+        sumValence += valenceOf(m);
       }
       avgValence = sumValence / moods.length;
 
@@ -372,11 +372,11 @@ module.exports = {
     const bufferStartUtcStr = bufferStartDate.toISOString().replace('T', ' ').substring(0, 19);
 
     // Fetch mood logs
-    const moodLogs = db.prepare('SELECT core_emotion, logged_at FROM mood_logs WHERE user_id = ? AND logged_at >= ?').all(userId, bufferStartUtcStr);
+    const moodLogs = db.prepare('SELECT core_emotion, specific_feeling, logged_at FROM mood_logs WHERE user_id = ? AND logged_at >= ?').all(userId, bufferStartUtcStr);
     for (const log of moodLogs) {
       const localDate = getLocalDateString(log.logged_at, timezone);
       if (dateMap[localDate]) {
-        dateMap[localDate].moodSum += CORE_VALENCE[log.core_emotion] || 0;
+        dateMap[localDate].moodSum += valenceOf(log);
         dateMap[localDate].moodCount++;
       }
     }
@@ -419,6 +419,7 @@ module.exports = {
       caffeineValues,
       rawMoodLogs: moodLogs.map(l => ({
         core_emotion: l.core_emotion,
+        specific_feeling: l.specific_feeling,
         localDate: getLocalDateString(l.logged_at, timezone)
       })),
       rawSleepLogs: sleepLogs.map(l => ({
@@ -447,13 +448,13 @@ module.exports = {
     const bufferStartUtcStr = bufferStartDate.toISOString().replace('T', ' ').substring(0, 19);
 
     // 1. Get daily average mood valence
-    const moodLogs = db.prepare('SELECT core_emotion, logged_at FROM mood_logs WHERE user_id = ? AND logged_at >= ?').all(userId, bufferStartUtcStr);
+    const moodLogs = db.prepare('SELECT core_emotion, specific_feeling, logged_at FROM mood_logs WHERE user_id = ? AND logged_at >= ?').all(userId, bufferStartUtcStr);
     const moodMap = {};
     for (const log of moodLogs) {
       const localDate = getLocalDateString(log.logged_at, timezone);
       if (dateLabels.includes(localDate)) {
         if (!moodMap[localDate]) moodMap[localDate] = { sum: 0, count: 0 };
-        moodMap[localDate].sum += CORE_VALENCE[log.core_emotion] || 0;
+        moodMap[localDate].sum += valenceOf(log);
         moodMap[localDate].count++;
       }
     }

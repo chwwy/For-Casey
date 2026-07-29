@@ -1,6 +1,6 @@
 const QuickChart = require('quickchart-js');
 const db = require('./db');
-const { CORE_VALENCE } = require('./wheel');
+const { valenceOf } = require('./wheel-valence');
 
 function pearsonCorrelation(x, y) {
   const n = x.length;
@@ -48,7 +48,7 @@ function buildPerEntryPairs(moodLogs, dailyAggregateMap, timezone) {
   for (const log of moodLogs) {
     const day = db.getLocalDateString(log.logged_at, timezone);
     if (dailyAggregateMap[day] !== undefined) {
-      const valence = CORE_VALENCE[log.core_emotion] !== undefined ? CORE_VALENCE[log.core_emotion] : 0;
+      const valence = valenceOf(log);
       moodValues.push(valence);
       otherValues.push(dailyAggregateMap[day]);
     }
@@ -126,7 +126,7 @@ async function generateChartUrls(userId, username, timezone, daysCount = 7) {
   const jitteredMoodPoints = getJitteredPoints(
     metrics.rawMoodLogs,
     dayIndexMap,
-    (log) => CORE_VALENCE[log.core_emotion] !== undefined ? CORE_VALENCE[log.core_emotion] : 0
+    (log) => valenceOf(log)
   );
 
   const jitteredSleepPoints = getJitteredPoints(

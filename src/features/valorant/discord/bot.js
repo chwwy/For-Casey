@@ -1452,7 +1452,10 @@ export const handleInteraction = async (interaction) => {
                                     body: me?.stats?.bodyshots,
                                     leg: me?.stats?.legshots
                                 },
-                                damage: me?.stats?.damage,
+                                damage: {
+                                    made: me?.stats?.damage?.dealt,
+                                    received: me?.stats?.damage?.received
+                                },
                                 character: me?.agent,
                                 tier: me?.tier?.id,
                                 team: me?.team_id

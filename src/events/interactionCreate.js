@@ -4,8 +4,76 @@ const config = require('../features/medication/config');
 const { ensurePersistentMessage } = require('../features/medication/index');
 const curhatFeature = require('../features/curhat');
 
+let valorantBot;
+async function getValorantBot() {
+    if (!valorantBot) {
+        valorantBot = await import('../features/valorant/discord/bot.js');
+    }
+    return valorantBot;
+}
+
 module.exports = async (interaction, client) => {
     try {
+        // Route Valorant commands and autocompletes
+        const valorantCommands = [
+            "shop", "bundles", "bundle", "nightmarket", "balance", 
+            "alert", "alerts", "update", "testalerts", "login", 
+            "2fa", "cookies", "settings", "logout", "forget", 
+            "collection", "battlepass", "stats", "account", "accounts", 
+            "valstatus", "info", "profile"
+        ];
+
+        if (interaction.isChatInputCommand() && valorantCommands.includes(interaction.commandName)) {
+            const vBot = await getValorantBot();
+            return await vBot.handleInteraction(interaction);
+        }
+
+        if (interaction.isAutocomplete() && valorantCommands.includes(interaction.commandName)) {
+            const vBot = await getValorantBot();
+            return await vBot.handleInteraction(interaction);
+        }
+
+        if (interaction.isButton()) {
+            const customId = interaction.customId;
+            const isValButton = 
+                customId.startsWith("removealert/") ||
+                customId.startsWith("retry_auth") ||
+                customId.startsWith("changealertspage") ||
+                customId.startsWith("changestatspage") ||
+                customId.startsWith("clpage") ||
+                customId.startsWith("clswitch") ||
+                customId.startsWith("clwpage") ||
+                customId.startsWith("clwswitch") ||
+                customId.startsWith("viewbundle") ||
+                customId.startsWith("account") ||
+                customId.startsWith("gotopage");
+
+            if (isValButton) {
+                const vBot = await getValorantBot();
+                return await vBot.handleInteraction(interaction);
+            }
+        }
+
+        if (interaction.isStringSelectMenu()) {
+            const customId = interaction.customId;
+            const valSelects = [
+                "skin-select", "skin-select-stats", "bundle-select", 
+                "set-setting", "select-skin-with-level", "select-skin-level", "get-level-video"
+            ];
+            if (valSelects.includes(customId)) {
+                const vBot = await getValorantBot();
+                return await vBot.handleInteraction(interaction);
+            }
+        }
+
+        if (interaction.isModalSubmit()) {
+            const customId = interaction.customId;
+            if (customId.startsWith("gotopage")) {
+                const vBot = await getValorantBot();
+                return await vBot.handleInteraction(interaction);
+            }
+        }
+
         // 1. Handle Slash Commands
         if (interaction.isChatInputCommand()) {
         if (interaction.commandName === 'log') {

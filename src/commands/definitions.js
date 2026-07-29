@@ -98,4 +98,8 @@ const commands = [
 ]
     .map(command => command.toJSON());
 
-module.exports = commands;
+const valorantCommands = require('./valorant');
+const allCommands = commands.concat(valorantCommands);
+
+module.exports = allCommands;
+

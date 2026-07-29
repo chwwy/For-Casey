@@ -14,11 +14,13 @@
     "default-gateway": "^6.0.3",
     "discord.js": "^14.14.0",
     "dotenv": "^16.4.5",
+    "fuzzysort": "^3.1.0",
     "genius-lyrics": "^4.4.7",
     "google-translate-api-x": "^10.7.2",
     "luxon": "^3.7.2",
     "node-cron": "^4.2.1",
     "quickchart-js": "^4.0.0",
-    "undici": "^5.28.4"
+    "undici": "^5.28.4",
+    "unofficial-valorant-api": "^2.3.1-stable.0"
   }
 }

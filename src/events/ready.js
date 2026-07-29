@@ -29,4 +29,14 @@ module.exports = async (client) => {
 
     // Initialize Mood Tracker Dashboards
     require('../features/mood-tracker').initDashboards(client);
+
+    // Initialize Valorant Shop & Alerts Features
+    try {
+        console.log('Initializing Valorant Shop & Alerts features...');
+        const valorantBot = await import('../features/valorant/discord/bot.js');
+        await valorantBot.init(client);
+    } catch (e) {
+        console.error('Failed to initialize Valorant features:', e);
+    }
 };
+

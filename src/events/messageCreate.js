@@ -4,6 +4,9 @@ const lyricsFeature = require('../features/lyrics');
 const autoBanFeature = require('../features/autoBan');
 const curhatFeature = require('../features/curhat');
 
+let valorantBot;
+
+
 module.exports = async (message, client) => {
     // Curhat Autodeletion (Handle all messages in curhat channels including bots)
     curhatFeature.handleMessage(message);
@@ -13,6 +16,19 @@ module.exports = async (message, client) => {
 
     // Ignore specific discord ID
     if (message.author.id === '1229524851459493919') return;
+
+    // Route Valorant admin commands
+    if (message.content.startsWith('!')) {
+        try {
+            if (!valorantBot) {
+                valorantBot = await import('../features/valorant/discord/bot.js');
+            }
+            const handled = await valorantBot.handleMessage(message);
+            if (handled) return;
+        } catch (e) {
+            console.error('Failed to handle Valorant message:', e);
+        }
+    }
 
     // 1.5. Auto-Ban & Purge check
     await autoBanFeature.handleMessage(message);

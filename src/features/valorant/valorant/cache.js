@@ -162,7 +162,7 @@ const getPrices = async (gameVersion, id = null) => {
     console.log(`Fetching skin prices using ${user.username}'s access token...`);
 
     // https://github.com/techchrism/valorant-api-docs/blob/trunk/docs/Store/GET%20Store_GetOffers.md
-    const req = await fetch(`https://pd.${userRegion(user)}.a.pvp.net/store/v1/offers/`, {
+    const req = await fetch(`https://pd.${userRegion(user)}.a.pvp.net/store/v1/offers`, {
         headers: {
             "Authorization": "Bearer " + user.auth.rso,
             "X-Riot-Entitlements-JWT": user.auth.ent,

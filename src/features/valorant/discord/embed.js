@@ -88,7 +88,6 @@ export const authFailureMessage = (interactionOrId, authResponse, message="AUTH_
 export const skinChosenEmbed = async (interaction, skin) => {
     const channel = interaction.channel || await fetchChannel(interaction.channelId);
     let description = s(interaction).info.ALERT_SET.f({s: await skinNameAndEmoji(skin, channel, interaction)});
-    if(config.fetchSkinPrices && !skin.price) description += s(interaction).info.ALERT_BP_SKIN;
     return {
         description: description,
         color: VAL_COLOR_1,

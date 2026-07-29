@@ -125,6 +125,65 @@ async function handleButton(interaction) {
   const customId = interaction.customId;
   const dashMsgId = interaction.message ? interaction.message.id : null;
 
+  // Back to Core mood selection
+  if (customId.startsWith('mood_back_to_core:')) {
+    const msgId = customId.split(':')[1];
+    const dashboard = verifyDashboardOwnership(interaction, msgId);
+    if (!dashboard) return;
+
+    const select = new StringSelectMenuBuilder()
+      .setCustomId(`mood_core:${msgId}`)
+      .setPlaceholder('Select Core Emotion');
+
+    const options = Object.keys(WHEEL).map(core => ({
+      label: `${core} ${CORE_EMOJIS[core] || ''}`,
+      value: core
+    }));
+    select.addOptions(options);
+
+    const row = new ActionRowBuilder().addComponents(select);
+    return interaction.update({
+      content: '📝 **Wheel of Emotions — Step 1: Core**\nSelect your primary core emotion below:',
+      components: [row]
+    });
+  }
+
+  // Back to Secondary mood selection
+  if (customId.startsWith('mood_back_to_secondary:')) {
+    const parts = customId.split(':');
+    const msgId = parts[1];
+    const core = parts[2];
+
+    const dashboard = verifyDashboardOwnership(interaction, msgId);
+    if (!dashboard) return;
+
+    const secondaries = WHEEL[core];
+    if (!secondaries) return;
+
+    const select = new StringSelectMenuBuilder()
+      .setCustomId(`mood_secondary:${msgId}:${core}`)
+      .setPlaceholder('Select Secondary Emotion');
+
+    const options = Object.keys(secondaries).map(sec => ({
+      label: sec,
+      value: sec
+    }));
+    select.addOptions(options);
+
+    const row = new ActionRowBuilder().addComponents(select);
+    const btnRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`mood_back_to_core:${msgId}`)
+        .setLabel('Back to Core')
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji('⬅️')
+    );
+    return interaction.update({
+      content: `📝 **Wheel of Emotions — Step 2: Secondary (${core})**\nRefine your emotion details:`,
+      components: [row, btnRow]
+    });
+  }
+
   // 1. Log Mood button
   if (customId === 'mood_log') {
     const dashboard = verifyDashboardOwnership(interaction, dashMsgId);
@@ -405,9 +464,16 @@ async function handleSelectMenu(interaction) {
     select.addOptions(options);
 
     const row = new ActionRowBuilder().addComponents(select);
+    const btnRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`mood_back_to_core:${msgId}`)
+        .setLabel('Back to Core')
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji('⬅️')
+    );
     return interaction.update({
       content: `📝 **Wheel of Emotions — Step 2: Secondary (${value})**\nRefine your emotion details:`,
-      components: [row]
+      components: [row, btnRow]
     });
   }
 
@@ -437,9 +503,16 @@ async function handleSelectMenu(interaction) {
     select.addOptions(options);
 
     const row = new ActionRowBuilder().addComponents(select);
+    const btnRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`mood_back_to_secondary:${msgId}:${core}`)
+        .setLabel('Back to Secondary')
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji('⬅️')
+    );
     return interaction.update({
       content: `📝 **Wheel of Emotions — Step 3: Specific Feeling (${core} > ${value})**\nSelect the exact word describing your feeling:`,
-      components: [row]
+      components: [row, btnRow]
     });
   }
 

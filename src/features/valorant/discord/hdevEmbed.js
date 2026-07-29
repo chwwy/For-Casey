@@ -94,7 +94,7 @@ export const rankEmbed = (data, name, tag) => {
         embed.addFields({ name: "📈 Last Games", value: last, inline: false });
     }
 
-    embed.setFooter({ text: `Region: ${(data.current?.tier?.act_data?.season_id || "").toUpperCase() || "—"}  •  HenrikDev API` });
+    embed.setFooter({ text: `Region: ${(data.current?.tier?.act_data?.season_id || "").toUpperCase() || "—"}` });
     return { embeds: [embed] };
 };
 
@@ -138,7 +138,6 @@ export const matchesEmbed = (matches, name, tag, mode = "competitive") => {
     });
 
     embed.setDescription(lines.join("\n\n"));
-    embed.setFooter({ text: "HenrikDev API" });
     return { embeds: [embed] };
 };
 
@@ -172,7 +171,6 @@ export const mmrHistoryEmbed = (history, name, tag) => {
     });
 
     embed.setDescription(lines.join("\n"));
-    embed.setFooter({ text: "HenrikDev API" });
     return { embeds: [embed] };
 };
 
@@ -205,7 +203,7 @@ export const leaderboardEmbed = (lbData, affinity) => {
     });
 
     embed.setDescription(lines.join("\n"));
-    embed.setFooter({ text: "HenrikDev API  •  Top 20 shown" });
+    embed.setFooter({ text: "Top 20 shown" });
     return { embeds: [embed] };
 };
 
@@ -243,7 +241,6 @@ export const esportsEmbed = (schedule) => {
     });
 
     embed.setDescription(lines.join("\n\n"));
-    embed.setFooter({ text: "Data via HenrikDev API (VLR.gg)" });
     return { embeds: [embed] };
 };
 
@@ -273,7 +270,6 @@ export const esportsEventsEmbed = (events) => {
     });
 
     embed.setDescription(lines.join("\n"));
-    embed.setFooter({ text: "Data via HenrikDev API (VLR.gg)" });
     return { embeds: [embed] };
 };
 
@@ -283,5 +279,4 @@ export const hdevErrorEmbed = (message) =>
     new EmbedBuilder()
         .setColor(0xED4245)
         .setTitle("❌ Error")
-        .setDescription(message || "Something went wrong calling the HenrikDev API.")
-        .setFooter({ text: "HenrikDev API" });
+        .setDescription(message || "Something went wrong. Please try again.");

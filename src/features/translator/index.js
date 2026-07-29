@@ -107,18 +107,9 @@ async function handleForwarding(message) {
     // --- Message Batching Logic ---
     const batchKey = `${message.channel.id}-${message.author.id}`;
 
-    // NEW LOGIC: If ANY other user has an active batch in this channel, forcibly close it immediately
-    for (const [key, existingBatch] of batchQueues.entries()) {
-        const [channelId, authorId] = key.split('-');
-        if (channelId === message.channel.id && authorId !== message.author.id) {
-            console.log(`User ${message.author.username} interrupted ${existingBatch.author.username}'s batch. Forcing dispatch.`);
-            flushBatch(key);
-        }
-    }
-
     let userBatch = batchQueues.get(batchKey);
 
-    // If a batch exists, clear the existing timer to reset the 6-second window
+    // If a batch exists, clear the existing timer to reset the window
     if (userBatch) {
         clearTimeout(userBatch.timer);
     } else {
@@ -148,7 +139,7 @@ async function handleForwarding(message) {
         }
     }
 
-    // Set a new 10-second timer
+    // Set a new timer
     resetBatchTimer(batchKey, destinationChannelId);
 
     return true;
@@ -185,17 +176,48 @@ function flushBatch(batchKey) {
         }
     }
 
-    // Grab the URL of the *last* message in the chain so the jump link goes to the end of their thought
-    const lastMessageUrl = userBatch.messages[userBatch.messages.length - 1].url;
+    // Grab the URL of the *first* message in the chain so the jump link goes to the start of their thought
+    const firstMessageUrl = userBatch.messages[0].url;
 
     // Process Translation Queue
     const currentQueue = channelQueues.get(destinationChannelId) || Promise.resolve();
 
     const nextTask = currentQueue.then(async () => {
-        // Translate the combined block
+        // Translate the combined block, chunking if it exceeds the API limit (3000 chars)
         let translatedText = null;
         if (combinedContent.length > 0) {
-            translatedText = await translateText(combinedContent, userBatch.author.username);
+            const maxChunkSize = 3000;
+            if (combinedContent.length <= maxChunkSize) {
+                translatedText = await translateText(combinedContent, userBatch.author.username);
+            } else {
+                const lines = combinedContent.split('\n');
+                const chunks = [];
+                let currentChunk = '';
+                for (const line of lines) {
+                    if (line.length > maxChunkSize) {
+                        if (currentChunk) chunks.push(currentChunk);
+                        let remaining = line;
+                        while (remaining.length > 0) {
+                            chunks.push(remaining.substring(0, maxChunkSize));
+                            remaining = remaining.substring(maxChunkSize);
+                        }
+                        currentChunk = '';
+                    } else if ((currentChunk ? currentChunk.length + 1 : 0) + line.length > maxChunkSize) {
+                        if (currentChunk) chunks.push(currentChunk);
+                        currentChunk = line;
+                    } else {
+                        currentChunk = currentChunk ? currentChunk + '\n' + line : line;
+                    }
+                }
+                if (currentChunk) chunks.push(currentChunk);
+
+                const translatedChunks = [];
+                for (const chunk of chunks) {
+                    const translated = await translateText(chunk, userBatch.author.username);
+                    if (translated) translatedChunks.push(translated);
+                }
+                translatedText = translatedChunks.join('\n');
+            }
         }
 
         // Translate reply context if it exists
@@ -216,14 +238,14 @@ function flushBatch(batchKey) {
         if (combinedContent) {
             descriptionParts.push(`\n\n__**Original 🇮🇩 (${userBatch.messages.length} msg${userBatch.messages.length > 1 ? 's' : ''}):**__\n${combinedContent}`);
         }
-        descriptionParts.push(`\n\n[Jump to Messages](${lastMessageUrl})`);
+        descriptionParts.push(`\n\n[Jump to Messages](${firstMessageUrl})`);
 
         const translationEmbed = new EmbedBuilder()
             .setColor(0xFFD1DC)
             .setAuthor({
                 name: `${userBatch.author.username}`,
                 iconURL: userBatch.author.displayAvatarURL(),
-                url: lastMessageUrl
+                url: firstMessageUrl
             })
             .setDescription(descriptionParts.join(''))
             .setFooter({ text: `From #${userBatch.sourceChannel.name}` })
@@ -257,7 +279,7 @@ function resetBatchTimer(batchKey, destinationChannelId) {
 
     userBatch.timer = setTimeout(() => {
         flushBatch(batchKey);
-    }, 10000); // 10-second timeout
+    }, config.TRANSLATION_DEBOUNCE_MS);
 }
 
 async function handleTyping(typing) {
